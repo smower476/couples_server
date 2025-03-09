@@ -7,7 +7,11 @@ set(CMAKE_BUILD_TYPE "Release")
  
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(LIBHTTPSERVER REQUIRED libhttpserver)
+pkg_check_modules(LIBJWT REQUIRED libjwt)
 
-add_executable(server main.cpp)
 
-target_link_libraries(server PRIVATE ${LIBHTTPSERVER_LIBRARIES})
+file(GLOB SOURCES "src/*.cpp")
+
+add_executable(server main.cpp ${SOURCES} )
+
+target_link_libraries(server PRIVATE ${LIBHTTPSERVER_LIBRARIES} ${LIBJWT_LIBRARIES})
