@@ -2,24 +2,23 @@
 #include <pqxx/pqxx>
 #include <iostream>
 
-
-void create_tables(pqxx::connection &conn) {
+void db_request(pqxx::connection &conn, const std::string content) {
     try {
         pqxx::work txn(conn);
         
-        std::string create_users_table = R"(CREATE TABLE IF NOT EXISTS users (
-            id SERIAL PRIMARY KEY, 
-            username VARCHAR(50) UNIQUE NOT NULL, 
-            password VARCHAR(255) NOT NULL,
-            linked_user INT REFERENCES users(id),
-            mood_scale INT,
-            mood_status CHAR
-            ))";
-
-        txn.exec(create_users_table);
+        txn.exec(content);
         txn.commit();
     } catch (const std::exception &e) {
-        std::cerr << "Error: cannot create users table" << e.what() << std::endl;
+        std::cerr << "Error: cannot process request" << e.what() << std::endl;
     }
 }
 
+
+void create_tables(pqxx::connection &conn) {
+    db_request(conn, tables::create_users_table);
+    db_request(conn, tables::create_token_table);
+    db_request(conn, tables::create_quizz_table);
+    db_request(conn, tables::create_quizz_user_answer_table);
+    db_request(conn, tables::create_quizz_content_table);
+    db_request(conn, tables::create_quizz_answer_content_table);
+}
