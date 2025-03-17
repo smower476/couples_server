@@ -25,7 +25,7 @@ bool validate_jwt(const std::string& token, std::string& username_out) {
         return false;
     }
     if (jwt_decode(&jwt, token.c_str(), (const unsigned char*)SECRET_KEY.c_str(), SECRET_KEY.size()) != 0) {
-        return false; // Invalid token
+        return false; 
     }
 
     const char* username = jwt_get_grant(jwt, "username");

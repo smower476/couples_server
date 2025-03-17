@@ -4,7 +4,6 @@
 #include "../include/regex.h"
 
 //  Add User
-//  TODO: hash passwords
 std::shared_ptr<http_response> add_user_resource::render(const http_request& req) {
     std::string username = req.get_arg("username");
     std::string password = req.get_arg("password");
@@ -12,14 +11,14 @@ std::shared_ptr<http_response> add_user_resource::render(const http_request& req
         return std::make_shared<string_response>("Invalid username or password", 401, "text/plain");
     }
 
-    if (add_user(username, password)) {
+    if (add_user(username, password) == 0) {
         return std::make_shared<string_response>("User created successfully", 201, "text/plain");
     }
 
     return std::make_shared<string_response>("User creation failed", 400, "text/plain");
 }
 
-// Login
+// Login (returns JWT)
 std::shared_ptr<http_response> login_resource::render(const http_request& req) {
     std::string username = req.get_arg("username");
     std::string password = req.get_arg("password");
@@ -27,12 +26,12 @@ std::shared_ptr<http_response> login_resource::render(const http_request& req) {
     if (!is_valid_login(username) || !is_valid_password(password)){
         return std::make_shared<string_response>("Invalid username or password", 401, "text/plain");
     }
-/*
+
     if (validate_user(username, password)) {
         std::string token = create_jwt(username);
         return std::make_shared<string_response>(token, 200, "application/json");
     }
-*/    
+    
     return std::make_shared<string_response>("Invalid username or password", 401, "text/plain");
 } 
 /*

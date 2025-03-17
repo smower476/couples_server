@@ -50,6 +50,7 @@ extern pqxx::connection conn;
 int create_table(const std::string content);
 void create_tables();
 int add_user(const std::string& username, const std::string& password);
-void validate_user();
+bool verify_password(const std::string& password, const std::string& hashed_password);
+bool validate_user(const std::string& username, const std::string& password);
 #endif
 
