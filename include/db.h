@@ -46,8 +46,10 @@ namespace tables{
         question_id INT NOT NULL REFERENCES quizz_content(id) ON DELETE CASCADE
         ))";
 }
-void db_request(pqxx::connection &conn, const std::string content);
-void create_tables(pqxx::connection &conn);
-
+extern pqxx::connection conn;
+int create_table(const std::string content);
+void create_tables();
+int add_user(const std::string& username, const std::string& password);
+void validate_user();
 #endif
 

@@ -18,16 +18,19 @@ void signal_callback_handler(int signum) {
 */
 
 int main() {
-    pqxx::connection conn("dbname=couples_db user=postgres host=localhost port=5432");
-    create_tables(conn);
+    create_tables();
     // signal(SIGINT, signal_callback_handler); // Ctrl + C handler
     
     
     webserver ws = create_webserver(PORT);
-
+//    validate_resource validate_res;
+    add_user_resource add_user_res;
     login_resource login_res;
-    ws.register_resource("/login", &login_res); // Login endpoint
 
+    ws.register_resource("/login", &login_res); // Login endpoint
+//    ws.register_resource("/validate-token", &validate_res);  // Token validation endpoint
+    ws.register_resource("/add-user", &add_user_res);        // User creation endpoint
+    
 
     std::cout << "Server running on http://localhost:" << PORT << "\n";
 
