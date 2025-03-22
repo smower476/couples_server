@@ -2,6 +2,7 @@
 #include "../include/token.h"
 #include "../include/db.h"
 #include "../include/regex.h"
+#include <string>
 
 //  Add User
 std::shared_ptr<http_response> add_user_resource::render(const http_request& req) {
@@ -34,6 +35,15 @@ std::shared_ptr<http_response> login_resource::render(const http_request& req) {
     
     return std::make_shared<string_response>("Invalid username or password", 401, "text/plain");
 } 
+
+
+std::shared_ptr<http_response> get_link_code_resource::render(const http_request& req) {
+    std::string username = req.get_arg("token");
+    int id = get_user_id(username);
+    int code = generate_link_code(id);  
+    
+    return std::make_shared<string_response>(std::to_string(code), 200, "text/plain");
+}
 /*
 // Validate JWT Token
 std::shared_ptr<http_response> validate_resource::render(const http_request& req) {

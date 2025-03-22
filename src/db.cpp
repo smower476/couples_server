@@ -1,7 +1,10 @@
 #include "../include/db.h"
+#include "../include/token.h"
 #include <pqxx/pqxx>
 #include <iostream>
 #include <sodium.h>  
+#include <cstdlib>
+
 
 pqxx::connection conn("dbname=couples_db user=postgres host=localhost port=5432");
 
@@ -54,28 +57,28 @@ int add_user(const std::string& username, const std::string& password) {
     try {
         std::string hashed_password = hash_password(password);
         pqxx::work txn(conn);
-        std::string query = "INSERT INTO users (username, password) VALUES ($1, $2)";
+        std::string query = "insert into users (username, password) values ($1, $2)";
         
-        std::cout << "Executing query: " << query << " with username: " << username << std::endl;
+        std::cout << "executing query: " << query << " with username: " << username << std::endl;
         
         txn.exec_params(query, username, hashed_password);
         txn.commit();
         
-        std::cout << "User added successfully." << std::endl;
+        std::cout << "user added successfully." << std::endl;
         return 0; 
     } catch (const pqxx::sql_error &e) {
-        std::cerr << "SQL error: " << e.what() << std::endl;
-        std::cerr << "Failed query: " << e.query() << std::endl;
+        std::cerr << "sql error: " << e.what() << std::endl;
+        std::cerr << "failed query: " << e.query() << std::endl;
 
-        // Check for duplicate key violation (error code 23505)
+        // check for duplicate key violation (error code 23505)
         if (std::string(e.what()).find("23505") != std::string::npos) {
-            std::cerr << "Error: Username already exists." << std::endl;
+            std::cerr << "error: username already exists." << std::endl;
             return -3; 
         }
 
         return -1; 
     } catch (const std::exception &e) {
-        std::cerr << "Error: failed to process DB request: " << e.what() << std::endl;
+        std::cerr << "error: failed to process db request: " << e.what() << std::endl;
         return -2; 
     }
 }
@@ -99,8 +102,61 @@ bool validate_user(const std::string& username, const std::string& password) {
         std::cerr << "SQL error: " << e.what() << std::endl;
         std::cerr << "Failed query: " << e.query() << std::endl;
         throw std::runtime_error("Database error occurred");
+        return false;
     } catch (const std::exception& e) {
         std::cerr << "Error: " << e.what() << std::endl;
         throw std::runtime_error("An error occurred during user validation");
+        return false;
     }
+}
+int get_user_id(const std::string& jwt){
+    try {
+        std::string username = decode_jwt(jwt);
+        pqxx::work txn(conn);
+        std::string query = "SELECT id FROM users WHERE username = $1;";
+        
+        std::cout << "executing query: " << query << " with username: " << username << std::endl;
+        
+        //pqxx::result result = txn.exec_params(query, username);
+        pqxx::row result = txn.exec_params1(query, username);
+        int id = result[0].as<int>();   
+        txn.commit();
+        
+        std::cout << "link code genereted successfully." << std::endl;
+        return id; 
+    } catch (const pqxx::sql_error &e) {
+        std::cerr << "sql error: " << e.what() << std::endl;
+        std::cerr << "failed query: " << e.query() << std::endl;
+        return -1; 
+    } catch (const std::exception &e) {
+        std::cerr << "error: failed to process db request: " << e.what() << std::endl;
+        return -2; 
+    }
+}
+int generate_link_code(const int& id){
+    // INSERT INTO token (user_id, link_token) VALUES (123456, 789012);
+    try {
+        std::srand(std::time(NULL));
+        int link_code =100000 + std::rand() % 899999;
+        pqxx::work txn(conn);
+        std::string query = "INSERT INTO token (user_id, link_token) VALUES ($1, $2)";
+        
+        std::cout << "executing query: " << query << " with id: " << id << " link code: " << link_code << std::endl;
+        
+        txn.exec_params(query, id, link_code);
+        txn.commit();
+        
+        std::cout << "link code genereted successfully." << std::endl;
+        return link_code; 
+    } catch (const pqxx::sql_error &e) {
+        std::cerr << "sql error: " << e.what() << std::endl;
+        std::cerr << "failed query: " << e.query() << std::endl;
+        return -1; 
+    } catch (const std::exception &e) {
+        std::cerr << "error: failed to process db request: " << e.what() << std::endl;
+        return -2; 
+    }
+
+    int code;
+    return code;
 }

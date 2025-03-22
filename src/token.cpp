@@ -1,5 +1,4 @@
 #include <jwt.h> 
-#include <iostream>
 #include "../include/regex.h"
 
 const std::string SECRET_KEY = "your_secret_key";
@@ -18,7 +17,7 @@ std::string create_jwt(const std::string& username) {
 
     return token;
 }
-
+/*
 bool validate_jwt(const std::string& token, std::string& username_out) {
     jwt_t* jwt = nullptr;
     if (!is_valid_jwt(token)){
@@ -37,4 +36,15 @@ bool validate_jwt(const std::string& token, std::string& username_out) {
 
     jwt_free(jwt);
     return false;
+}
+*/
+std::string decode_jwt(const std::string& token){
+    jwt_t* jwt = nullptr;
+
+    jwt_decode(&jwt, token.c_str(), (const unsigned char*)SECRET_KEY.c_str(), SECRET_KEY.size());
+
+    std::string username = std::string(jwt_get_grant(jwt, "username"));
+
+    jwt_free(jwt);
+    return username;
 }
