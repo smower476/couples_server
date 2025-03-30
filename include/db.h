@@ -1,5 +1,6 @@
 #ifndef DB_H
 #define DB_H
+#include <cstdint>
 #include <pqxx/pqxx>
 
 namespace tables{
@@ -14,7 +15,7 @@ namespace tables{
     
     inline std::string create_token_table = R"(CREATE TABLE IF NOT EXISTS token (
         id SERIAL PRIMARY KEY,
-        user_id INT UNIQUE NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        user_id BIGINT UNIQUE NOT NULL REFERENCES users(id) ON DELETE CASCADE,
         link_token INT UNIQUE NOT NULL
         ))";        
 
@@ -51,7 +52,7 @@ void create_tables();
 int add_user(const std::string& username, const std::string& password);
 bool verify_password(const std::string& password, const std::string& hashed_password);
 bool validate_user(const std::string& username, const std::string& password);
-int get_user_id(const std::string& jwt);
-int generate_link_code(const int& id);
+int64_t get_user_id(const std::string& jwt);
+int64_t generate_link_code(const int64_t id);
 #endif
 

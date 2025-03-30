@@ -1,12 +1,14 @@
 #include "../include/db.h"
 #include "../include/token.h"
+#include <cstdint>
 #include <pqxx/pqxx>
 #include <iostream>
 #include <sodium.h>  
 #include <cstdlib>
 
 
-pqxx::connection conn("dbname=couples_db user=postgres host=localhost port=5432");
+// pqxx::connection conn("dbname=couples_db user=postgres host=localhost port=5432");
+pqxx::connection conn("dbname=defaultdb user=asaenko password=F8yNWmZq8twr4GSPtFnR6w host=mackson-5039.jxf.gcp-us-east1.cockroachlabs.cloud port=26257 sslmode=require");
 
 int create_table(const std::string query) {
     try {
@@ -109,7 +111,7 @@ bool validate_user(const std::string& username, const std::string& password) {
         return false;
     }
 }
-int get_user_id(const std::string& jwt){
+std::int64_t get_user_id(const std::string& jwt){
     try {
         std::string username = decode_jwt(jwt);
         pqxx::work txn(conn);
@@ -119,10 +121,9 @@ int get_user_id(const std::string& jwt){
         
         //pqxx::result result = txn.exec_params(query, username);
         pqxx::row result = txn.exec_params1(query, username);
-        int id = result[0].as<int>();   
+        int64_t id = result[0].as<std::int64_t>();   
         txn.commit();
-        
-        std::cout << "link code genereted successfully." << std::endl;
+        std::cout<<"\n USER ID " << id << "\n";
         return id; 
     } catch (const pqxx::sql_error &e) {
         std::cerr << "sql error: " << e.what() << std::endl;
@@ -133,9 +134,11 @@ int get_user_id(const std::string& jwt){
         return -2; 
     }
 }
-int generate_link_code(const int& id){
-    // INSERT INTO token (user_id, link_token) VALUES (123456, 789012);
+int64_t generate_link_code(const int64_t id){
+    // INSERT INTO token (user_id, ) VALUES (123456, 789012);
     try {
+        
+        std::cout<< "\n sizeof " << sizeof(int) <<  "\n";
         std::srand(std::time(NULL));
         int link_code =100000 + std::rand() % 899999;
         pqxx::work txn(conn);
@@ -144,6 +147,7 @@ int generate_link_code(const int& id){
         std::cout << "executing query: " << query << " with id: " << id << " link code: " << link_code << std::endl;
         
         txn.exec_params(query, id, link_code);
+        
         txn.commit();
         
         std::cout << "link code genereted successfully." << std::endl;
@@ -156,7 +160,4 @@ int generate_link_code(const int& id){
         std::cerr << "error: failed to process db request: " << e.what() << std::endl;
         return -2; 
     }
-
-    int code;
-    return code;
 }
