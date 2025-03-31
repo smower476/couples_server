@@ -8,7 +8,7 @@
 
 
 // pqxx::connection conn("dbname=couples_db user=postgres host=localhost port=5432");
-pqxx::connection conn("dbname=defaultdb user=asaenko password=F8yNWmZq8twr4GSPtFnR6w host=mackson-5039.jxf.gcp-us-east1.cockroachlabs.cloud port=26257 sslmode=require");
+pqxx::connection conn("dbname=defaultdb user= password= host=mackson-5039.jxf.gcp-us-east1.cockroachlabs.cloud port= sslmode=require");
 
 int create_table(const std::string query) {
     try {
