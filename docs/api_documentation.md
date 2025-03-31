@@ -3,7 +3,7 @@
 ## HTTP Endpoints
 
 ### Add User
-* **Endpoint:** `/add_user`
+* **Endpoint:** `/add-user`
 * **Method:** `POST`
 * **Parameters:**
   * `username`: The username of the new user (3-20 alphanumeric characters)
@@ -24,7 +24,7 @@
   * `401 Unauthorized`: "Invalid username or password"
 
 ### Get Link Code
-* **Endpoint:** `/get_link_code`
+* **Endpoint:** `/get-link-code`
 * **Method:** `GET`
 * **Parameters:**
   * `token`: Valid JWT token
