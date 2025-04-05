@@ -16,7 +16,8 @@ namespace tables{
     inline std::string create_token_table = R"(CREATE TABLE IF NOT EXISTS token (
         id SERIAL PRIMARY KEY,
         user_id BIGINT UNIQUE NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-        link_token INT UNIQUE NOT NULL
+        link_token INT UNIQUE NOT NULL,
+        expired_at TIMESTAMP NOT NULL
         ))";        
 
     inline std::string create_quizz_table = R"(CREATE TABLE IF NOT EXISTS quizz (
@@ -54,5 +55,6 @@ bool verify_password(const std::string& password, const std::string& hashed_pass
 bool validate_user(const std::string& username, const std::string& password);
 int64_t get_user_id(const std::string& jwt);
 int64_t generate_link_code(const int64_t id);
+int link_user(const int link_token, const std::string &jwt);
 #endif
 

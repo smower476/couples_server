@@ -3,7 +3,7 @@
 **Refinements & Enhancements**
 
 - [ ] Authentication & Security:
-    - [ ] Implement robust 401 response for `get-link-code` endpoint.
+    - [x] Implement robust 401 response for `get-link-code` endpoint.
     - [ ] Introduce `expire_at` claim to JWT and `link_token` for enhanced security and token management.
 
 **Daily Quiz Functionality**

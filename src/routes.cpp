@@ -33,7 +33,7 @@ std::shared_ptr<http_response> login_resource::render(const http_request& req) {
         std::string token = create_jwt(username);
         return std::make_shared<string_response>(token, 200, "application/json");
     }
-    
+
     return std::make_shared<string_response>("Invalid username or password", 401, "text/plain");
 } 
 
@@ -41,10 +41,24 @@ std::shared_ptr<http_response> login_resource::render(const http_request& req) {
 std::shared_ptr<http_response> get_link_code_resource::render(const http_request& req) {
     std::string username = req.get_arg("token");
     int64_t id = get_user_id(username);
+    if (id == -2) return std::make_shared<string_response>("Invalid JWT token", 401, "text/plain");
     int code = generate_link_code(id);  
-    
+    if ( 100000 > code || code > 999999 || id == -1) return std::make_shared<string_response>("Internal Server Error", 500, "text/plain");
     return std::make_shared<string_response>(std::to_string(code), 200, "text/plain");
 }
+
+std::shared_ptr<http_response> link_users_resource::render(const http_request& req) {
+    std::string jwt = req.get_arg("token");
+    std::string link_code = req.get_arg("link_code");
+
+    int response = link_user(std::stoll(link_code), jwt);
+
+    if (response == -2) return std::make_shared<string_response>("Invalid JWT token", 401, "text/plain");
+    if (response == -1) return std::make_shared<string_response>("Internal Server Error", 500, "text/plain");
+    return std::make_shared<string_response>("Success", 200, "text/plain");
+}
+
+
 /*
 // Validate JWT Token
 std::shared_ptr<http_response> validate_resource::render(const http_request& req) {
@@ -59,6 +73,6 @@ std::shared_ptr<http_response> validate_resource::render(const http_request& req
         }
     }
 
-    return std::make_shared<string_response>("Invalid token", 401, "text/plain");
+    return std::make_shared<string_response>("Invalid JWT token", 401, "text/plain");
 }
 */

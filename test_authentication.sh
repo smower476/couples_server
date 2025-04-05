@@ -1,8 +1,10 @@
 #!/bin/bash
+
+#ADDRESS=129.18.234.85:8081
 ADDRESS=localhost:8080
-LOGIN=mmmmmax14
-PASSWORD=secretsecret14
-NEW_PASSWORD=newsecret14
+LOGIN=mmmmmax1
+PASSWORD=secretsecret1
+NEW_PASSWORD=newsecret1
 
 # Create user
 curl -X POST http://$ADDRESS/add-user -d "username=$LOGIN&password=$PASSWORD"

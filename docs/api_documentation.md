@@ -30,3 +30,5 @@
   * `token`: Valid JWT token
 * **Responses:**
   * `200 OK`: Returns 6-digit link code (text/plain)
+  * `500 Internal Server Error`: Internal Server Error
+  * `401 Unauthorized`: "Invalid token"
