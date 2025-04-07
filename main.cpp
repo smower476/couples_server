@@ -29,6 +29,7 @@ int main() {
     get_link_code_resource get_link_code_res;
     link_users_resource link_users_res;
     get_daily_quiz_resource get_daily_quiz_res;
+    get_quiz_content_resource get_quiz_content_res;
 
     ws.register_resource("/login", &login_res); // Login endpoint
 //    ws.register_resource("/validate-token", &validate_res);  // Token validation endpoint
@@ -36,6 +37,7 @@ int main() {
     ws.register_resource("/get-link-code", &get_link_code_res);        // User creation endpoint
     ws.register_resource("/link_users", &link_users_res);
     ws.register_resource("/get-daily-quiz", &get_daily_quiz_res);
+    ws.register_resource("/get-quiz-content", &get_quiz_content_res);
     std::cout << "Server running on http://localhost:" << PORT << "\n";
 
     ws.start(true);

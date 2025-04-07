@@ -16,3 +16,7 @@ printf "\n"
 
 # Get most recent available qiuz data
 curl -X POST http://$ADDRESS/get-daily-quiz -d "token=$JWT"
+printf "\n"
+
+# Get quiz content
+curl -X POST http://$ADDRESS/get-quiz-content -d "token=$JWT&quiz_id=0"

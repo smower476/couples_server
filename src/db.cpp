@@ -237,23 +237,43 @@ std::string daily_quiz_json = result[0][0].as<std::string>();
     }
 }
 
-std::string get_quiz_content(const int64_t id){
+std::string get_quiz_content(const int64_t quiz_id, const int64_t user_id){
     try {
-        pqxx::work txn(conn);
-        std::string query = R"(SELECT json_agg(q) FROM (
-            SELECT * FROM quiz 
-            WHERE belongs_to = 0 OR belongs_to = $1
-            ORDER BY created_at DESC
-            LIMIT 1) q
-        )";
+        // quiz_id , user_id (jwt)
+        if (user_id < 0) throw std::runtime_error("Invalid JWT or user not found");;
         
-        std::cout << "executing query: " << query << " with id: " << id << std::endl;
-        pqxx::result result = txn.exec_params(query, id);
+        pqxx::work txn(conn);
+        std::string query = R"( 
+            SELECT json_build_object(
+            'quiz_content', json_agg(
+                json_build_object( 
+                    'content_id', quiz_content.id,
+                    'content_data', quiz_content.question,
+                    'answers', (
+                        SELECT json_agg(
+                            json_build_object(
+                                'answer_id', qac.id,
+                                'answer_content', qac.content
+                            )
+                        )
+                        FROM quiz_answer_content qac
+                        WHERE qac.question_id = quiz_content.id
+                    )
+                )
+            )
+            ) as json_result
+            FROM quiz
+            RIGHT JOIN quiz_content ON quiz.id = quiz_content.quiz_id
+            WHERE quiz.id = $1 AND (quiz.belongs_to = $2 OR quiz.belongs_to = 0)
+            GROUP BY quiz.id;
+        )";
 
-std::string daily_quiz_json = result[0][0].as<std::string>();
+        std::cout << "executing query: " << query << " with user id: " << user_id << " and quiz_id " << quiz_id << std::endl;
+        pqxx::result result = txn.exec_params(query, quiz_id, user_id);
+        std::string daily_quiz_json = result[0][0].as<std::string>();
 
         txn.commit();
-        std::cout<<"\n daily quiz json " << daily_quiz_json << "\n";
+        std::cout<<"\n quiz content " << daily_quiz_json << "\n";
     
         return daily_quiz_json; 
     } catch (const pqxx::sql_error &e) {

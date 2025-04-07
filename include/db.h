@@ -57,5 +57,6 @@ int64_t get_user_id(const std::string& jwt);
 int64_t generate_link_code(const int64_t id);
 int link_user(const int link_token, const std::string &jwt);
 std::string get_daily_quiz(const int64_t id);
+std::string get_quiz_content(const int64_t quiz_id, const int64_t user_id);
 #endif
 

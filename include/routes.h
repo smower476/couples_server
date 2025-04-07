@@ -37,4 +37,10 @@ public:
     std::shared_ptr<http_response> render(const http_request& req) override;
 };
 
+class get_quiz_content_resource : public http_resource {
+public:
+    std::shared_ptr<http_response> render(const http_request& req) override;
+};
+
+
 #endif
