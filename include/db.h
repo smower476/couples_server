@@ -17,34 +17,34 @@ namespace tables{
         id SERIAL PRIMARY KEY,
         user_id BIGINT UNIQUE NOT NULL REFERENCES users(id) ON DELETE CASCADE,
         link_token INT UNIQUE NOT NULL,
-        expired_at TIMESTAMP NOT NULL
+        expired_at DATE NOT NULL
         ))";        
 
-    inline std::string create_quizz_table = R"(CREATE TABLE IF NOT EXISTS quizz (
+    inline std::string create_quiz_table = R"(CREATE TABLE IF NOT EXISTS quiz (
         id SERIAL PRIMARY KEY,
-        quizz_name VARCHAR(255) NOT NULL,
+        quiz_name VARCHAR(255) NOT NULL,
         created_at TIMESTAMP NOT NULL,
         belongs_to INT NOT NULL
         ))";
 
-    inline std::string create_quizz_user_answer_table = R"(CREATE TABLE IF NOT EXISTS quizz_user_answer (
+    inline std::string create_quiz_user_answer_table = R"(CREATE TABLE IF NOT EXISTS quiz_user_answer (
         id SERIAL PRIMARY KEY,
-        quizz_answer BIGINT NOT NULL,
+        quiz_answer BIGINT NOT NULL,
         user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-        quizz_id INT NOT NULL REFERENCES quizz(id) ON DELETE CASCADE,
+        quiz_id INT NOT NULL REFERENCES quiz(id) ON DELETE CASCADE,
         answered_at TIMESTAMP NOT NULL
         ))";
 
-    inline std::string create_quizz_content_table = R"(CREATE TABLE IF NOT EXISTS quizz_content (
+    inline std::string create_quiz_content_table = R"(CREATE TABLE IF NOT EXISTS quiz_content (
         id SERIAL PRIMARY KEY,
-        quizz_id INT NOT NULL REFERENCES quizz(id) ON DELETE CASCADE,
+        quiz_id INT NOT NULL REFERENCES quiz(id) ON DELETE CASCADE,
         question VARCHAR(255) NOT NULL 
         ))";
 
-    inline std::string create_quizz_answer_content_table = R"(CREATE TABLE IF NOT EXISTS quizz_answer_content (
+    inline std::string create_quiz_answer_content_table = R"(CREATE TABLE IF NOT EXISTS quiz_answer_content (
         id SERIAL PRIMARY KEY,
         content VARCHAR(50) NOT NULL,
-        question_id INT NOT NULL REFERENCES quizz_content(id) ON DELETE CASCADE
+        question_id INT NOT NULL REFERENCES quiz_content(id) ON DELETE CASCADE
         ))";
 }
 extern pqxx::connection conn;
@@ -56,5 +56,6 @@ bool validate_user(const std::string& username, const std::string& password);
 int64_t get_user_id(const std::string& jwt);
 int64_t generate_link_code(const int64_t id);
 int link_user(const int link_token, const std::string &jwt);
+std::string get_daily_quiz(const int64_t id);
 #endif
 

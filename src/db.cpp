@@ -9,9 +9,7 @@
 
 const char * pqxx_connection = std::getenv("PQXX_CONNECTION");
 pqxx::connection conn(pqxx_connection);
-
-// pqxx::connection conn("dbname=couples_db user=postgres host=localhost port=5432");
-// pqxx::connection conn("dbname=defaultdb user=asaenko password=qMB322BEzl8qKfj3EK1_7A  host=mackson-5039.jxf.gcp-us-east1.cockroachlabs.cloud port=26257 sslmode=require");
+//pqxx::connection conn("dbname=couples_db user=postgres host=localhost port=5432");
 
 int create_table(const std::string query) {
     try {
@@ -33,10 +31,10 @@ int create_table(const std::string query) {
 void create_tables() {
     create_table(tables::create_users_table);
     create_table(tables::create_token_table);
-    create_table(tables::create_quizz_table);
-    create_table(tables::create_quizz_user_answer_table);
-    create_table(tables::create_quizz_content_table);
-    create_table(tables::create_quizz_answer_content_table);
+    create_table(tables::create_quiz_table);
+    create_table(tables::create_quiz_user_answer_table);
+    create_table(tables::create_quiz_content_table);
+    create_table(tables::create_quiz_answer_content_table);
 }
 
 std::string hash_password(const std::string& password) {
@@ -209,3 +207,62 @@ int link_user(const int link_token, const std::string &jwt){
         return -2; 
     }
 }
+
+std::string get_daily_quiz(const int64_t id){
+    try {
+        pqxx::work txn(conn);
+        std::string query = R"(SELECT json_agg(q) FROM (
+            SELECT * FROM quiz 
+            WHERE belongs_to = 0 OR belongs_to = $1
+            ORDER BY created_at DESC
+            LIMIT 1) q
+        )";
+        
+        std::cout << "executing query: " << query << " with id: " << id << std::endl;
+        pqxx::result result = txn.exec_params(query, id);
+
+std::string daily_quiz_json = result[0][0].as<std::string>();
+
+        txn.commit();
+        std::cout<<"\n daily quiz json " << daily_quiz_json << "\n";
+    
+        return daily_quiz_json; 
+    } catch (const pqxx::sql_error &e) {
+        std::cerr << "sql error: " << e.what() << std::endl;
+        std::cerr << "failed query: " << e.query() << std::endl;
+        throw;
+    } catch (const std::exception &e) {
+        std::cerr << "error: failed to process db request: " << e.what() << std::endl;
+        throw;
+    }
+}
+
+std::string get_quiz_content(const int64_t id){
+    try {
+        pqxx::work txn(conn);
+        std::string query = R"(SELECT json_agg(q) FROM (
+            SELECT * FROM quiz 
+            WHERE belongs_to = 0 OR belongs_to = $1
+            ORDER BY created_at DESC
+            LIMIT 1) q
+        )";
+        
+        std::cout << "executing query: " << query << " with id: " << id << std::endl;
+        pqxx::result result = txn.exec_params(query, id);
+
+std::string daily_quiz_json = result[0][0].as<std::string>();
+
+        txn.commit();
+        std::cout<<"\n daily quiz json " << daily_quiz_json << "\n";
+    
+        return daily_quiz_json; 
+    } catch (const pqxx::sql_error &e) {
+        std::cerr << "sql error: " << e.what() << std::endl;
+        std::cerr << "failed query: " << e.query() << std::endl;
+        throw;
+    } catch (const std::exception &e) {
+        std::cerr << "error: failed to process db request: " << e.what() << std::endl;
+        throw;
+    }
+}
+

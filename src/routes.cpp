@@ -58,6 +58,20 @@ std::shared_ptr<http_response> link_users_resource::render(const http_request& r
     return std::make_shared<string_response>("Success", 200, "text/plain");
 }
 
+std::shared_ptr<http_response> get_daily_quiz_resource::render(const http_request& req) {
+    std::string jwt = req.get_arg("token");
+    int64_t id = get_user_id(jwt);
+    if (id == -2) return std::make_shared<string_response>("Invalid JWT token", 401, "text/plain");
+    if (id == -1) return std::make_shared<string_response>("Internal Server Error", 500, "text/plain");
+
+    std::string daily_quiz = get_daily_quiz( id);
+    
+    if (daily_quiz.empty()) return std::make_shared<string_response>("Internal Server Error", 500, "text/plain");
+
+
+    return std::make_shared<string_response>(daily_quiz, 200, "text/plain");
+}
+
 
 /*
 // Validate JWT Token
