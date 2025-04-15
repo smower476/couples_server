@@ -17,7 +17,7 @@ namespace tables{
         id SERIAL PRIMARY KEY,
         user_id BIGINT UNIQUE NOT NULL REFERENCES users(id) ON DELETE CASCADE,
         link_token INT UNIQUE NOT NULL,
-        expired_at DATE NOT NULL
+        expired_at TIMESTAMP NOT NULL
         ))";        
 
     inline std::string create_quiz_table = R"(CREATE TABLE IF NOT EXISTS quiz (

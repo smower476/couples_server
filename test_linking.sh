@@ -25,4 +25,4 @@ echo $LINK_CODE
 printf "\n"
 
 # Link users
-curl -X POST http://$ADDRESS/link_users -d "token=$JWT2&link_code=$LINK_CODE"
+curl -X POST http://$ADDRESS/link-users -d "token=$JWT2&link_code=$LINK_CODE"
