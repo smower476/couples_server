@@ -165,13 +165,10 @@ int64_t generate_link_code(const int64_t id){
 
 int link_user(const int link_token, const std::string &jwt){
     try {
-        // jwt and link_token
-        // insert 
         int64_t id = get_user_id(jwt);
         if (id < 0) return id;
-        
+               
         pqxx::work txn(conn);
-//         std::string query = "SELECT id FROM users WHERE username = $1;";
         std::string query =  R"(
             WITH token_owner AS (
                 SELECT u.id 
@@ -188,13 +185,18 @@ int link_user(const int link_token, const std::string &jwt){
             END
             WHERE users.id IN ($2, (SELECT id FROM token_owner))
             AND EXISTS (SELECT 1 FROM token WHERE link_token = $1 AND expired_at > NOW())        
+            AND $2 != (SELECT id FROM token_owner)
+        RETURNING 1
         )";
 
         std::cout << "executing query: " << query << " with id: " << id << " link code: " << link_token << std::endl;
         
-        txn.exec_params(query, link_token, id);
-
+        auto result = txn.exec_params(query, link_token, id);
         txn.commit();
+
+        if (result.empty()) {
+            return -3;  
+        }
         
         std::cout << "User linked successfully!" << std::endl;
         return id; 

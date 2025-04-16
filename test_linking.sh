@@ -1,9 +1,9 @@
 #!/bin/bash
 
-ADDRESS=129.158.234.85:8080
-#ADDRESS=localhost:8080
-LOGIN1=testuser1_3
-LOGIN2=testuser2_3
+#ADDRESS=129.158.234.85:8080
+ADDRESS=localhost:8080
+LOGIN1=testuser1_6
+LOGIN2=testuser2_6
 PASSWORD=secretsecret1
 
 # Create users
