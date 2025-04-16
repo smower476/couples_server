@@ -53,6 +53,7 @@ std::shared_ptr<http_response> link_users_resource::render(const http_request& r
 
     int response = link_user(std::stoll(link_code), jwt);
 
+    if (response == -3) return std::make_shared<string_response>("Invalid link code", 404, "text/plain");
     if (response == -2) return std::make_shared<string_response>("Invalid JWT token", 401, "text/plain");
     if (response == -1) return std::make_shared<string_response>("Internal Server Error", 500, "text/plain");
     return std::make_shared<string_response>("Success", 200, "text/plain");
