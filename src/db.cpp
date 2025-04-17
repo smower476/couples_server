@@ -386,13 +386,23 @@ int add_quiz(int64_t user_id, const std::string& quiz_json_str) {
     std::vector<std::pair<std::string, std::vector<std::string>>> questions_data;
 
     try {
+        // Helper function to extract value after the last tab
+        auto extract_value = [](const std::string& line) -> std::string {
+            size_t tab_pos = line.rfind('\t');
+            if (tab_pos == std::string::npos) {
+                throw std::runtime_error("Expected tab delimiter not found in line: " + line);
+            }
+            return line.substr(tab_pos + 1);
+        };
+
         // Line 1: Quiz Name
-        if (!std::getline(ss, quiz_name)) throw std::runtime_error("Failed to read quiz name");
+        if (!std::getline(ss, line)) throw std::runtime_error("Failed to read quiz name line");
+        quiz_name = extract_value(line);
         std::cerr << "Parsed quiz_name: " << quiz_name << std::endl;
 
         // Line 2: Number of Questions
-        if (!std::getline(ss, line)) throw std::runtime_error("Failed to read number of questions");
-        num_questions = std::stoi(line);
+        if (!std::getline(ss, line)) throw std::runtime_error("Failed to read number of questions line");
+        num_questions = std::stoi(extract_value(line));
          std::cerr << "Parsed num_questions: " << num_questions << std::endl;
 
         for (int i = 0; i < num_questions; ++i) {
@@ -400,18 +410,21 @@ int add_quiz(int64_t user_id, const std::string& quiz_json_str) {
             int num_options = 0;
             std::vector<std::string> options_text;
 
-            // Question Text
-            if (!std::getline(ss, question_text)) throw std::runtime_error("Failed to read question text for question " + std::to_string(i+1));
+            // Question Text Line (e.g., "QUESTION\t1\tWhat is your favorite color?")
+            if (!std::getline(ss, line)) throw std::runtime_error("Failed to read question text line for question " + std::to_string(i+1));
+            question_text = extract_value(line); // Value is after the last tab
              std::cerr << "Parsed question_text(" << i+1 << "): " << question_text << std::endl;
 
-            // Number of Options
-            if (!std::getline(ss, line)) throw std::runtime_error("Failed to read number of options for question " + std::to_string(i+1));
-            num_options = std::stoi(line);
+            // Number of Options Line (e.g., "NUM_OPTIONS\t1\t4")
+            if (!std::getline(ss, line)) throw std::runtime_error("Failed to read number of options line for question " + std::to_string(i+1));
+            num_options = std::stoi(extract_value(line)); // Value is after the last tab
              std::cerr << "Parsed num_options(" << i+1 << "): " << num_options << std::endl;
 
             for (int j = 0; j < num_options; ++j) {
                 std::string option_text;
-                if (!std::getline(ss, option_text)) throw std::runtime_error("Failed to read option text " + std::to_string(j+1) + " for question " + std::to_string(i+1));
+                // Option Text Line (e.g., "OPTION\t1\tA\tBlue")
+                if (!std::getline(ss, line)) throw std::runtime_error("Failed to read option text line " + std::to_string(j+1) + " for question " + std::to_string(i+1));
+                option_text = extract_value(line); // Value is after the last tab
                  std::cerr << "Parsed option_text(" << i+1 << "," << j+1 << "): " << option_text << std::endl;
                 options_text.push_back(option_text);
             }
