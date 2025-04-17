@@ -2,8 +2,8 @@
 
 #ADDRESS=129.158.234.85:8080
 ADDRESS=localhost:8080
-LOGIN=testuser1_6
-PASSWORD=secretsecret1
+LOGIN=testuser
+PASSWORD=testpassword
 
 # # Create users
 # curl -X POST http://$ADDRESS/add-user -d "username=$LOGIN&password=$PASSWORD"
@@ -18,5 +18,5 @@ printf "\n"
 curl -X POST http://$ADDRESS/get-daily-quiz -d "token=$JWT"
 printf "\n"
 
-# # Get quiz content
-# curl -X POST http://$ADDRESS/get-quiz-content -d "token=$JWT&quiz_id=0"
+# Get quiz content
+curl -X POST http://$ADDRESS/get-quiz-content -d "token=$JWT&quiz_id=0"

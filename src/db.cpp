@@ -336,8 +336,15 @@ std::string get_quiz_content(const int64_t quiz_id, const int64_t user_id){
 
         std::cout << "executing query: " << query << " with user id: " << user_id << " and quiz_id " << quiz_id << std::endl;
         pqxx::result result = txn.exec_params(query, quiz_id, user_id);
-        std::string daily_quiz_json = result[0][0].as<std::string>();
 
+        // Check if the query returned any rows and if the result is not NULL
+        if (result.empty() || result[0][0].is_null()) {
+            txn.commit(); // Commit even if no content found
+            std::cout << "\n No quiz content found or result is NULL for quiz_id: " << quiz_id << ", user_id: " << user_id << "\n";
+            return "{}"; // Return empty JSON object
+        }
+
+        std::string daily_quiz_json = result[0][0].as<std::string>();
         txn.commit();
         std::cout<<"\n quiz content " << daily_quiz_json << "\n";
 
