@@ -1,7 +1,33 @@
 #!/bin/bash
 
-# Define the JSON data directly as a string
-QUIZ_JSON='{
+# Fixed username and password for the test user
+USERNAME="testuser"
+PASSWORD="testpassword"
+BASE_URL="http://localhost:8080"
+
+# Create a new user
+echo "Creating a new user..."
+CREATE_RESPONSE=$(curl -s -X POST "$BASE_URL/add-user?username=$USERNAME&password=$PASSWORD")
+echo "Create User Response: $CREATE_RESPONSE"
+
+# Login and get the JWT token
+echo "Logging in and getting JWT token..."
+# Curl returns the token directly in the body for this endpoint based on the ps1 script
+TOKEN=$(curl -s -X GET "$BASE_URL/login?username=$USERNAME&password=$PASSWORD")
+echo "Login Response (Token): $TOKEN"
+
+# Check if token is empty
+if [ -z "$TOKEN" ]; then
+    echo "Error: Failed to retrieve JWT token. Aborting."
+    exit 1
+fi
+
+echo "JWT Token: $TOKEN"
+
+# The Quiz JSON payload
+# Using a heredoc for multiline JSON
+read -r -d '' QUIZ_JSON << EOM
+{
     "quizName": "Quiz Example",
     "quizId": "12345",
     "numberOfQuestions": 10,
@@ -37,7 +63,7 @@ QUIZ_JSON='{
             "questionAnswer": "A"
         },
         "4": {
-            "question": "Who wrote Romeo and Juliet?",
+            "question": "Who wrote 'Romeo and Juliet'?",
             "questionOptions": {
                 "A": { "optionText": "Charles Dickens" },
                 "B": { "optionText": "William Shakespeare" },
@@ -107,15 +133,22 @@ QUIZ_JSON='{
             "questionAnswer": "D"
         }
     }
-}'
+}
+EOM
 
-# Remove newlines and carriage returns, fix degree symbol
-PROCESSED_JSON=$(echo "$QUIZ_JSON" | tr -d '\n\r' | sed 's/Â°/°/g')
+# Replace the degree symbol using sed (matches the ps1 script's logic)
+# Note: The specific character 'Â°' might depend on file encoding issues.
+# Using the standard degree symbol '°' directly in the heredoc is often safer.
+# However, to match the ps1 exactly, we perform the replacement.
+PROCESSED_QUIZ_JSON=$(echo "$QUIZ_JSON" | sed 's/Â°/°/g')
 
-# Note: Shell argument escaping for complex JSON can be tricky.
-# This approach passes the processed string directly.
-# If the python script fails, more robust escaping (e.g., using jq) might be needed.
-# For this specific JSON, direct passing might work.
+echo "Attempting to add quiz..."
 
-# Call the Python script with the processed JSON string as an argument
-python3 scripts/parse_quiz.py "$PROCESSED_JSON"
+# Send the POST request using curl
+ADD_RESPONSE=$(curl -s -X POST "$BASE_URL/add-quiz?token=$TOKEN" \
+     -H "Content-Type: application/json" \
+     -d "$PROCESSED_QUIZ_JSON")
+
+echo # Add a newline for cleaner output
+echo "Add Quiz Response: $ADD_RESPONSE"
+echo "Request sent."

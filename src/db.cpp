@@ -345,6 +345,7 @@ std::string get_quiz_content(const int64_t quiz_id, const int64_t user_id){
 
 // Add Quiz Data using Python script for parsing
 int add_quiz(int64_t user_id, const std::string& quiz_json_str) {
+    std::cout << "Entering add_quiz for user_id: " << user_id << std::endl;
     // Escape the JSON string for safe command-line argument passing
     // Replace single quotes with '\'' (end quote, escaped quote, start quote) and wrap in single quotes.
     std::string escaped_json_str = "'"; // Start with single quote
@@ -362,16 +363,19 @@ int add_quiz(int64_t user_id, const std::string& quiz_json_str) {
     // Log a simplified version for clarity, avoiding potentially huge JSON strings in logs
     std::cerr << "Executing Python command: python3 scripts/parse_quiz.py '<JSON_DATA>'" << std::endl;
 
+    std::cout << "Calling Python script to parse quiz JSON..." << std::endl;
     PipeResult script_result = exec_pipe(command, ""); // Pass empty input string as before
 
     std::cerr << "Python script output (combined):\n" << script_result.output << std::endl;
     std::cerr << "Python script error:\n" << script_result.error << std::endl;
     std::cerr << "Python script exit code: " << script_result.exit_code << std::endl;
+    std::cout << "Python script finished with exit code: " << script_result.exit_code << std::endl;
 
    if (script_result.exit_code != 0) {
         std::cerr << "Python script execution failed. Exit code: " << script_result.exit_code << std::endl;
         std::cerr << "Script output/error: " << script_result.output << std::endl;
         // No temporary file to remove
+        std::cout << "Exiting add_quiz with return code: -6" << std::endl;
         return -6; // Indicate script execution failure
     }
 
@@ -417,10 +421,12 @@ int add_quiz(int64_t user_id, const std::string& quiz_json_str) {
         std::cerr << "Error parsing Python script output: " << e.what() << std::endl;
         std::cerr << "Script output was:\n" << script_result.output << std::endl;
         // No temporary file to remove
+        std::cout << "Exiting add_quiz with return code: -7" << std::endl;
         return -7; // Indicate parsing error
     }
 
     // Now, perform database operations with parsed data
+    std::cout << "Starting database transaction to insert quiz data..." << std::endl;
     try {
         pqxx::work txn(conn);
 
@@ -464,17 +470,21 @@ int add_quiz(int64_t user_id, const std::string& quiz_json_str) {
         }
 
         txn.commit();
-        std::cout << "Quiz '" << quiz_name << "' (ID: " << new_quiz_id << ") added successfully for user " << user_id << " via Python script." << std::endl;
+        std::cout << "Database transaction committed." << std::endl;
+        std::cout << "Quiz '" << quiz_name << "' (ID: " << new_quiz_id << ") added successfully for user " << user_id << "." << std::endl;
         // No temporary file to remove
+        std::cout << "Exiting add_quiz with return code: 0" << std::endl;
         return 0; // Success
     } catch (const pqxx::sql_error &e) {
         std::cerr << "SQL error in add_quiz (after script): " << e.what() << std::endl;
         std::cerr << "Failed query: " << e.query() << std::endl;
         // No temporary file to remove
+        std::cout << "Exiting add_quiz with return code: -1 (SQL error)" << std::endl;
         return -1; // Generic SQL error
     } catch (const std::exception &e) {
         std::cerr << "Error in add_quiz (after script): " << e.what() << std::endl;
         // No temporary file to remove
+        std::cout << "Exiting add_quiz with return code: -1 (Exception)" << std::endl;
         return -1; // Return error code
     }
     // The misplaced cleanup and return 0 are removed; the function's closing brace was already correct at line 477.
