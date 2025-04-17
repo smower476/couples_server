@@ -428,7 +428,14 @@ int add_quiz(int64_t user_id, const std::string& quiz_json_str) {
                  std::cerr << "Parsed option_text(" << i+1 << "," << j+1 << "): " << option_text << std::endl;
                 options_text.push_back(option_text);
             }
-            questions_data.push_back({question_text, options_text});
+
+            // Parse the Answer Line (e.g., "ANSWER\t1\tC")
+            std::string answer_text;
+            if (!std::getline(ss, line)) throw std::runtime_error("Failed to read answer line for question " + std::to_string(i+1));
+            answer_text = extract_value(line); // Value is after the last tab
+            std::cerr << "Parsed answer_text(" << i+1 << "): " << answer_text << " (Note: Not currently stored in DB)" << std::endl;
+
+            questions_data.push_back({question_text, options_text}); // Storing only question and options for now
         }
     } catch (const std::exception& e) {
         std::cerr << "Error parsing Python script output: " << e.what() << std::endl;
