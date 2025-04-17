@@ -5,56 +5,50 @@
 #include <iostream>
 #include <sodium.h>
 #include <cstdlib>
-#include <cstdio> // For popen, pclose, FILE
-#include <cerrno> // For errno
-#include <cstring> // For strerror
-#include <memory> // For unique_ptr
-#include <stdexcept> // For runtime_error
-#include <array> // For buffer
-#include <sstream> // For stringstream
-#include <vector> // For storing parsed data
+#include <cstdio>
+#include <cerrno>
+#include <cstring>
+#include <memory>
+#include <stdexcept>
+#include <array>
+#include <sstream>
+#include <vector>
 
-
-// Helper function to execute a command and capture its output/error
 struct PipeResult {
     std::string output;
     std::string error;
     int exit_code;
 };
 
-// The 'input' parameter is no longer used for stdin with popen mode "r"
 PipeResult exec_pipe(const std::string& cmd, const std::string& /* input */) {
     PipeResult result;
-    result.exit_code = -1; // Default error code
+    result.exit_code = -1;
 
-// Define POPEN and PCLOSE directly for Linux
 #define POPEN popen
 #define PCLOSE pclose
 
-// Custom deleter for FILE* from popen
 struct PipeCloser {
     void operator()(FILE* pipe) const {
         if (pipe) {
-            PCLOSE(pipe); // Use pclose directly
+            PCLOSE(pipe);
         }
     }
 };
 
-    std::unique_ptr<FILE, PipeCloser> pipe(popen(cmd.c_str(), "r")); // Changed mode to "r"
+    std::unique_ptr<FILE, PipeCloser> pipe(popen(cmd.c_str(), "r"));
 
     if (!pipe) {
-        // Capture errno immediately after the failed call
         int error_code = errno;
         result.error = "popen() failed! errno: " + std::to_string(error_code) + " (" + strerror(error_code) + ")";
         return result;
     }
 
-    std::array<char, 256> buffer; // Buffer for reading output
-    result.output = ""; // Initialize output string
+    std::array<char, 256> buffer;
+    result.output = "";
     while (fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr) {
         result.output += buffer.data();
     }
-    FILE* pipe_ptr = pipe.release(); // Release ownership from unique_ptr
+    FILE* pipe_ptr = pipe.release();
     if (pipe_ptr) {
          result.exit_code = PCLOSE(pipe_ptr);
     } else {
@@ -62,7 +56,6 @@ struct PipeCloser {
          // If release happened but PCLOSE fails, exit_code might be inaccurate.
          // Consider more robust error checking if PCLOSE failure is critical.
     }
-
 
     return result;
 }
@@ -197,7 +190,6 @@ std::int64_t get_user_id(const std::string& jwt){
     }
 }
 int64_t generate_link_code(const int64_t id){
-    // INSERT INTO token (user_id, ) VALUES (123456, 789012);
     try {
         std::srand(std::time(NULL));
         int link_code =100000 + std::rand() % 899999;
@@ -351,18 +343,18 @@ std::string get_quiz_content(const int64_t quiz_id, const int64_t user_id){
 // Add Quiz Data using Python script for parsing
 int add_quiz(int64_t user_id, const std::string& quiz_json_str) {
     std::string command = "python3 scripts/parse_quiz.py '" + quiz_json_str + "'";
-    std::cerr << "Executing Python command: " << command << std::endl; // Log the command
+    std::cerr << "Executing Python command: " << command << std::endl;
 
     PipeResult script_result = exec_pipe(command, "");
 
-    std::cerr << "Python script output (combined):\n" << script_result.output << std::endl; // Log the output
-    std::cerr << "Python script error:\n" << script_result.error << std::endl; // Log the error
-    std::cerr << "Python script exit code: " << script_result.exit_code << std::endl; // Log the exit code
+    std::cerr << "Python script output (combined):\n" << script_result.output << std::endl;
+    std::cerr << "Python script error:\n" << script_result.error << std::endl;
+    std::cerr << "Python script exit code: " << script_result.exit_code << std::endl;
 
    if (script_result.exit_code != 0) {
         std::cerr << "Python script execution failed. Exit code: " << script_result.exit_code << std::endl;
-        std::cerr << "Script output/error: " << script_result.output << std::endl; // Combined output/error
-        return -6; // Indicate script error
+        std::cerr << "Script output/error: " << script_result.output << std::endl;
+        return -6;
     }
 
     std::stringstream ss(script_result.output);

@@ -3,30 +3,20 @@ import json
 import argparse
 
 def main():
-    parser = argparse.ArgumentParser(description='Parse quiz JSON provided as a command-line argument.')
-    parser.add_argument('quiz_json', help='The JSON string representing the quiz data.')
+    parser = argparse.ArgumentParser(description='Parse quiz JSON from a file.')
+    parser.add_argument('quiz_json_file', help='Path to the JSON file containing quiz data.')
     args = parser.parse_args()
 
     try:
-        quiz_json_str = args.quiz_json
-        if not quiz_json_str:
-            print("Error: No JSON input provided via argument.", file=sys.stderr)
+        quiz_json_file_path = args.quiz_json_file
+        try:
+            with open(quiz_json_file_path, 'r') as f:
+                quiz_json_str = f.read()
+        except FileNotFoundError:
+            print(f"Error: File not found at path: {quiz_json_file_path}", file=sys.stderr)
             sys.exit(1)
 
-        # Print the received JSON string to stderr for debugging
-        print("Received JSON argument:", quiz_json_str, file=sys.stderr) # Modified log message
-
         quiz_data = json.loads(quiz_json_str)
-
-        # --- Output format for C++ ---
-        # Line 1: Quiz Name
-        # Line 2: Number of Questions
-        # For each question:
-        #   Line: Question Text
-        #   Line: Number of Options
-        #   For each option:
-        #       Line: Option Text
-        # -----------------------------
 
         quiz_name = quiz_data.get("quizName", "Unnamed Quiz")
         questions = quiz_data.get("questions", {})
@@ -35,7 +25,6 @@ def main():
         print(quiz_name)
         print(num_questions)
 
-        # Ensure questions are processed in order if keys are numeric strings
         question_keys = sorted(questions.keys(), key=lambda x: int(x) if x.isdigit() else float('inf'))
 
         for q_key in question_keys:
@@ -47,14 +36,13 @@ def main():
             print(question_text)
             print(num_options)
 
-            # Ensure options are processed in order (A, B, C, D...)
             option_keys = sorted(options.keys())
             for opt_key in option_keys:
                 opt_data = options[opt_key]
                 option_text = opt_data.get("optionText", "No option text")
                 print(option_text)
 
-        sys.exit(0) # Success
+        sys.exit(0)
 
     except json.JSONDecodeError as e:
         print(f"Error: Invalid JSON format - {e}", file=sys.stderr)
