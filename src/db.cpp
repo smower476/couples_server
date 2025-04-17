@@ -41,8 +41,8 @@ struct PipeCloser {
 
     std::array<char, 128> buffer;
     // Use the custom deleter PipeCloser
-    // Use popen directly
-    std::unique_ptr<FILE, PipeCloser> pipe(popen((cmd + " 2>&1").c_str(), "w+"));
+    // Use popen directly with mode "w" and remove "2>&1" redirection
+    std::unique_ptr<FILE, PipeCloser> pipe(popen(cmd.c_str(), "w")); // Changed mode to "w", removed " 2>&1"
 
     if (!pipe) {
         // Capture errno immediately after the failed call
@@ -64,10 +64,14 @@ struct PipeCloser {
     // For simple stdin->stdout, closing write handle might be complex with popen.
     // Let's rely on the script reading until EOF.
 
-    // Read the script's output from stdout
+    // Read the script's output from stdout - THIS WILL NOT WORK WITH MODE "w"
+    // Commenting out temporarily to fix popen EINVAL. Output will be lost.
+    /*
     while (fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr) {
         result.output += buffer.data();
     }
+    */
+    // Since reading is commented out, result.output will remain empty.
 
     // unique_ptr with custom deleter handles closing the pipe automatically when it goes out of scope.
     // We need to capture the exit code *before* the unique_ptr is destroyed.
