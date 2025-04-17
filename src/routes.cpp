@@ -4,6 +4,8 @@
 #include "../include/regex.h"
 #include <cstdint>
 #include <string>
+#include <nlohmann/json.hpp> // Assuming nlohmann/json is used for JSON parsing
+using json = nlohmann::json;
 
 //  Add User
 std::shared_ptr<http_response> add_user_resource::render(const http_request& req) {
@@ -116,3 +118,49 @@ std::shared_ptr<http_response> validate_resource::render(const http_request& req
     return std::make_shared<string_response>("Invalid JWT token", 401, "text/plain");
 }
 */
+
+// Add Quiz
+std::shared_ptr<http_response> add_quiz_resource::render(const http_request& req) {
+    std::string jwt = req.get_arg("token"); // Assuming token is passed as an argument
+    std::string quiz_json_str = req.get_content();
+
+    // Validate JWT and get user ID
+    int64_t user_id = get_user_id(jwt);
+    if (user_id == -2) {
+        return std::make_shared<string_response>(R"({"error": "Invalid JWT token"})", 401, "application/json");
+    }
+    if (user_id == -1) {
+        return std::make_shared<string_response>(R"({"error": "Internal Server Error validating token"})", 500, "application/json");
+    }
+
+    // Basic validation: Check if JSON string is empty
+    if (quiz_json_str.empty()) {
+        return std::make_shared<string_response>(R"({"error": "Missing quiz data in request body"})", 400, "application/json");
+    }
+
+    // Optional: Validate JSON structure here if needed before passing to DB function
+    try {
+        json quiz_data = json::parse(quiz_json_str);
+        // Add more specific validation if required (e.g., check for quizName, questions)
+        if (!quiz_data.contains("quizName") || !quiz_data.contains("questions")) {
+             return std::make_shared<string_response>(R"({"error": "Invalid quiz JSON structure"})", 400, "application/json");
+        }
+    } catch (json::parse_error& e) {
+        std::cerr << "JSON parse error: " << e.what() << std::endl;
+        return std::make_shared<string_response>(R"({"error": "Invalid JSON format"})", 400, "application/json");
+    }
+
+    // Call database function to add the quiz
+    // Assuming a function like: int add_quiz(int64_t user_id, const std::string& quiz_json);
+    // It should return 0 on success, negative on error, positive if quiz already exists (adjust as needed)
+    int db_result = add_quiz(user_id, quiz_json_str);
+
+    if (db_result == 0) {
+        return std::make_shared<string_response>(R"({"message": "Quiz added successfully"})", 201, "application/json");
+    } else if (db_result > 0) { // Example: Handle case where quiz might already exist
+         return std::make_shared<string_response>(R"({"error": "Quiz with this ID might already exist"})", 409, "application/json"); // Conflict
+    } else { // Handle generic database errors (-1 or other negative codes)
+        std::cerr << "Database error adding quiz for user " << user_id << std::endl;
+        return std::make_shared<string_response>(R"({"error": "Failed to add quiz to database"})", 500, "application/json");
+    }
+}
