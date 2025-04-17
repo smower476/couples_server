@@ -1,7 +1,7 @@
 #!/bin/bash
 
-QUIZ_JSON=$(cat <<EOF
-{
+# Define the JSON data directly as a string
+QUIZ_JSON='{
     "quizName": "Quiz Example",
     "quizId": "12345",
     "numberOfQuestions": 10,
@@ -37,7 +37,7 @@ QUIZ_JSON=$(cat <<EOF
             "questionAnswer": "A"
         },
         "4": {
-            "question": "Who wrote 'Romeo and Juliet'?",
+            "question": "Who wrote Romeo and Juliet?",
             "questionOptions": {
                 "A": { "optionText": "Charles Dickens" },
                 "B": { "optionText": "William Shakespeare" },
