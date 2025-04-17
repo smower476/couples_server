@@ -3,23 +3,24 @@
 #include "include/db.h"
 #include <httpserver.hpp>
 #include <pqxx/pqxx>
-//#include <signal.h>
+#include <csignal> // Use <csignal> for C++ style
 
 #define PORT 8080
 
 using namespace httpserver;
 
-/*
-void signal_callback_handler(int signum) {
-   // db_close
-    std::cout << "\n" << "DB Closed " << "\n";
-    exit(signum);
+// Signal handler function
+void signal_handler(int signum) {
+   std::cout << "\nstopping server.." << std::endl;
+   // Perform any necessary cleanup here if needed (e.g., closing DB connections gracefully)
+   // The webserver might have a stop method, but exit() provides immediate termination.
+   exit(signum);
 }
-*/
+
 
 int main() {
     create_tables();
-    // signal(SIGINT, signal_callback_handler); // Ctrl + C handler
+    signal(SIGINT, signal_handler); // Register Ctrl+C handler
     
     
     webserver ws = create_webserver(PORT);
