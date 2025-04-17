@@ -13,15 +13,6 @@
 #include <vector> // For storing parsed data
 
 
-// Custom deleter for FILE* from popen
-struct PipeCloser {
-    void operator()(FILE* pipe) const {
-        if (pipe) {
-            PCLOSE(pipe);
-        }
-    }
-};
-
 // Helper function to execute a command and capture its output/error
 struct PipeResult {
     std::string output;
@@ -40,6 +31,16 @@ PipeResult exec_pipe(const std::string& cmd, const std::string& input) {
     #define POPEN popen
     #define PCLOSE pclose
 #endif
+
+// Custom deleter for FILE* from popen - Defined *after* PCLOSE macro
+struct PipeCloser {
+    void operator()(FILE* pipe) const {
+        if (pipe) {
+            // PCLOSE is defined by the preprocessor block above
+            PCLOSE(pipe);
+        }
+    }
+};
 
     std::array<char, 128> buffer;
     // Use the custom deleter PipeCloser instead of decltype(&PCLOSE)
