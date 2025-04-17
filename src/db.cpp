@@ -13,6 +13,15 @@
 #include <vector> // For storing parsed data
 
 
+// Custom deleter for FILE* from popen
+struct PipeCloser {
+    void operator()(FILE* pipe) const {
+        if (pipe) {
+            PCLOSE(pipe);
+        }
+    }
+};
+
 // Helper function to execute a command and capture its output/error
 struct PipeResult {
     std::string output;
@@ -33,7 +42,8 @@ PipeResult exec_pipe(const std::string& cmd, const std::string& input) {
 #endif
 
     std::array<char, 128> buffer;
-    std::unique_ptr<FILE, decltype(&PCLOSE)> pipe(POPEN((cmd + " 2>&1").c_str(), "w+"), PCLOSE); // Combine stdout/stderr for simplicity initially, or manage separately
+    // Use the custom deleter PipeCloser instead of decltype(&PCLOSE)
+    std::unique_ptr<FILE, PipeCloser> pipe(POPEN((cmd + " 2>&1").c_str(), "w+"));
 
     if (!pipe) {
         result.error = "popen() failed!";
@@ -58,7 +68,23 @@ PipeResult exec_pipe(const std::string& cmd, const std::string& input) {
         result.output += buffer.data();
     }
 
-    result.exit_code = PCLOSE(pipe.release()); // Release ownership before explicit close
+    // unique_ptr with custom deleter handles closing the pipe automatically when it goes out of scope.
+    // We need to capture the exit code *before* the unique_ptr is destroyed.
+    // This is tricky with popen as closing the pipe gives the exit status.
+    // Let's capture the exit code after reading is done, but before unique_ptr destructs.
+    // Note: Releasing and manually closing might be needed if exit code is strictly required *before* potential exceptions during output processing.
+    // However, for this flow, letting unique_ptr manage closure is cleaner.
+    // The exit code might be retrieved differently depending on exact needs and error handling strategy.
+    // A simple approach is to close manually *after* reading.
+    FILE* pipe_ptr = pipe.release(); // Release ownership from unique_ptr
+    if (pipe_ptr) {
+         result.exit_code = PCLOSE(pipe_ptr);
+    } else {
+         // If pipe creation failed initially, result.exit_code remains -1
+         // If release happened but PCLOSE fails, exit_code might be inaccurate.
+         // Consider more robust error checking if PCLOSE failure is critical.
+    }
+
 
     // Note: A more robust solution might use platform-specific APIs
     // (CreateProcess on Windows, fork/exec/pipe on Linux) for better control
