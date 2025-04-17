@@ -345,23 +345,24 @@ std::string get_quiz_content(const int64_t quiz_id, const int64_t user_id){
 
 // Add Quiz Data using Python script for parsing
 int add_quiz(int64_t user_id, const std::string& quiz_json_str) {
-    // Create a temporary file
-    std::filesystem::path temp_file_path = std::filesystem::temp_directory_path() / "quiz_data.json";
-    std::ofstream temp_file(temp_file_path.string());
-    if (!temp_file.is_open()) {
-        std::cerr << "Failed to open temporary file for writing." << std::endl;
-        return -8;
+    // Escape the JSON string for safe command-line argument passing
+    // Replace single quotes with '\'' (end quote, escaped quote, start quote) and wrap in single quotes.
+    std::string escaped_json_str = "'"; // Start with single quote
+    for (char c : quiz_json_str) {
+        if (c == '\'') {
+            escaped_json_str += "'\\''";
+        } else {
+            escaped_json_str += c;
+        }
     }
+    escaped_json_str += "'"; // End with single quote
 
-    // Write the JSON string to the temporary file
-    temp_file << quiz_json_str;
-    temp_file.close();
+    // Construct the command to execute the Python script with the JSON string as an argument
+    std::string command = "python3 scripts/parse_quiz.py " + escaped_json_str;
+    // Log a simplified version for clarity, avoiding potentially huge JSON strings in logs
+    std::cerr << "Executing Python command: python3 scripts/parse_quiz.py '<JSON_DATA>'" << std::endl;
 
-    // Construct the command to execute the Python script with the temporary file path
-    std::string command = "python3 scripts/parse_quiz.py '" + temp_file_path.string() + "'";
-    std::cerr << "Executing Python command: " << command << std::endl;
-
-    PipeResult script_result = exec_pipe(command, "");
+    PipeResult script_result = exec_pipe(command, ""); // Pass empty input string as before
 
     std::cerr << "Python script output (combined):\n" << script_result.output << std::endl;
     std::cerr << "Python script error:\n" << script_result.error << std::endl;
@@ -370,8 +371,8 @@ int add_quiz(int64_t user_id, const std::string& quiz_json_str) {
    if (script_result.exit_code != 0) {
         std::cerr << "Python script execution failed. Exit code: " << script_result.exit_code << std::endl;
         std::cerr << "Script output/error: " << script_result.output << std::endl;
-        std::filesystem::remove(temp_file_path); // Cleanup on script failure
-        return -6;
+        // No temporary file to remove
+        return -6; // Indicate script execution failure
     }
 
     std::stringstream ss(script_result.output);
@@ -415,7 +416,7 @@ int add_quiz(int64_t user_id, const std::string& quiz_json_str) {
     } catch (const std::exception& e) {
         std::cerr << "Error parsing Python script output: " << e.what() << std::endl;
         std::cerr << "Script output was:\n" << script_result.output << std::endl;
-        std::filesystem::remove(temp_file_path); // Cleanup on parsing failure
+        // No temporary file to remove
         return -7; // Indicate parsing error
     }
 
@@ -464,17 +465,16 @@ int add_quiz(int64_t user_id, const std::string& quiz_json_str) {
 
         txn.commit();
         std::cout << "Quiz '" << quiz_name << "' (ID: " << new_quiz_id << ") added successfully for user " << user_id << " via Python script." << std::endl;
-        std::filesystem::remove(temp_file_path); // Cleanup on success
+        // No temporary file to remove
         return 0; // Success
-
     } catch (const pqxx::sql_error &e) {
         std::cerr << "SQL error in add_quiz (after script): " << e.what() << std::endl;
         std::cerr << "Failed query: " << e.query() << std::endl;
-        std::filesystem::remove(temp_file_path); // Cleanup on SQL error
+        // No temporary file to remove
         return -1; // Generic SQL error
     } catch (const std::exception &e) {
         std::cerr << "Error in add_quiz (after script): " << e.what() << std::endl;
-        std::filesystem::remove(temp_file_path); // Cleanup on other DB error
+        // No temporary file to remove
         return -1; // Return error code
     }
     // The misplaced cleanup and return 0 are removed; the function's closing brace was already correct at line 477.

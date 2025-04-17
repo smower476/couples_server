@@ -136,6 +136,9 @@ $QUIZ_JSON = @'
 }
 '@
 
+# Replace the degree symbol to match parse_quiz test
+$QUIZ_JSON = $QUIZ_JSON -replace "Â°", "°"
+
 Write-Host "Attempting to add quiz..."
 
 # Send the POST request using curl
@@ -145,8 +148,8 @@ $headers = @{
 
 $uri = "http://localhost:8080/add-quiz?token=$TOKEN"
 
-$jsonBody = $QUIZ_JSON | ConvertTo-Json
-Invoke-RestMethod -Uri $uri -Method Post -Headers $headers -Body $jsonBody
+# $QUIZ_JSON is already a JSON string, no need to convert again
+Invoke-RestMethod -Uri $uri -Method Post -Headers $headers -Body $QUIZ_JSON
 
 Write-Host # Add a newline for cleaner output
 
