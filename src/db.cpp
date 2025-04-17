@@ -264,7 +264,8 @@ int link_user(const int link_token, const std::string &jwt){
 
 int64_t get_daily_quiz(const int64_t id){
     try {
-        pqxx::work txn(conn);
+        // Use a read-only transaction for SELECT queries
+        pqxx::read_transaction txn(conn);
         // Select only the ID of the latest quiz (public or user's)
         std::string query = R"(
             SELECT id FROM quiz
@@ -274,28 +275,26 @@ int64_t get_daily_quiz(const int64_t id){
         )";
 
         std::cout << "executing query: " << query << " with id: " << id << std::endl;
-        // Use exec_params01 to handle 0 or 1 result row
-        pqxx::result result = txn.exec_params(query, id);
 
-        txn.commit(); // Commit the transaction
+        // Use exec_params1 which expects exactly one row
+        pqxx::row result = txn.exec_params1(query, id);
+        // No explicit commit needed for read_transaction
 
-        if (result.empty()) {
-            std::cout << "\n No daily quiz found for user id: " << id << "\n";
-            return -1; // Return -1 if no quiz is found
-        }
-
-        int64_t quiz_id = result[0][0].as<int64_t>();
+        int64_t quiz_id = result[0].as<int64_t>();
         std::cout << "\n Daily quiz ID: " << quiz_id << "\n";
         return quiz_id;
 
+    } catch (const pqxx::unexpected_rows &) {
+        // exec_params1 throws this if 0 or >1 rows are returned.
+        // Treat this as "not found" for the daily quiz.
+        std::cout << "\n No daily quiz found for user id: " << id << " (unexpected_rows exception)\n";
+        return -1; // Indicate quiz not found
     } catch (const pqxx::sql_error &e) {
         std::cerr << "sql error: " << e.what() << std::endl;
         std::cerr << "failed query: " << e.query() << std::endl;
-        // Consider returning an error code instead of throwing, consistent with other functions
         return -2; // Indicate SQL error
     } catch (const std::exception &e) {
         std::cerr << "error: failed to process db request: " << e.what() << std::endl;
-         // Consider returning an error code instead of throwing
         return -3; // Indicate other exception
     }
 }
