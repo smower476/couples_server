@@ -340,9 +340,25 @@ std::string get_quiz_content(const int64_t quiz_id, const int64_t user_id){
     }
 }
 
+#include <fstream>
+#include <filesystem>
+
 // Add Quiz Data using Python script for parsing
 int add_quiz(int64_t user_id, const std::string& quiz_json_str) {
-    std::string command = "python3 scripts/parse_quiz.py '" + quiz_json_str + "'";
+    // Create a temporary file
+    std::filesystem::path temp_file_path = std::filesystem::temp_directory_path() / "quiz_data.json";
+    std::ofstream temp_file(temp_file_path.string());
+    if (!temp_file.is_open()) {
+        std::cerr << "Failed to open temporary file for writing." << std::endl;
+        return -8;
+    }
+
+    // Write the JSON string to the temporary file
+    temp_file << quiz_json_str;
+    temp_file.close();
+
+    // Construct the command to execute the Python script with the temporary file path
+    std::string command = "python3 scripts/parse_quiz.py '" + temp_file_path.string() + "'";
     std::cerr << "Executing Python command: " << command << std::endl;
 
     PipeResult script_result = exec_pipe(command, "");
@@ -454,6 +470,8 @@ int add_quiz(int64_t user_id, const std::string& quiz_json_str) {
         return -1; // Generic SQL error
     } catch (const std::exception &e) {
         std::cerr << "Error in add_quiz (after script): " << e.what() << std::endl;
-        return -2; // Generic internal error
-    }
+    // Remove the temporary file
+    std::filesystem::remove(temp_file_path);
+
+    return 0;
 }

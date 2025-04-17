@@ -145,7 +145,8 @@ $headers = @{
 
 $uri = "http://localhost:8080/add-quiz?token=$TOKEN"
 
-Invoke-RestMethod -Uri $uri -Method Post -Headers $headers -Body $QUIZ_JSON
+$jsonBody = $QUIZ_JSON | ConvertTo-Json
+Invoke-RestMethod -Uri $uri -Method Post -Headers $headers -Body $jsonBody
 
 Write-Host # Add a newline for cleaner output
 

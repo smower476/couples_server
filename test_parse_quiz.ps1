@@ -109,5 +109,17 @@ $QUIZ_JSON = @'
 }
 '@
 
-# Pipe the JSON to the Python script
-$QUIZ_JSON | py scripts/parse_quiz.py
+# Remove newlines and carriage returns from the JSON string
+$QUIZ_JSON = $QUIZ_JSON -replace "`r", "" -replace "`n", ""
+
+# Remove newlines and carriage returns from the JSON string
+$QUIZ_JSON = $QUIZ_JSON -replace "`r", "" -replace "`n", ""
+
+# Replace the degree symbol with a standard degree symbol
+$QUIZ_JSON = $QUIZ_JSON -replace "Â°", "°"
+
+# Escape the JSON string for command line
+$escapedJson = $QUIZ_JSON -replace '"', '\"'
+
+# Call the Python script with the JSON string as an argument
+py scripts/parse_quiz.py "$escapedJson"
