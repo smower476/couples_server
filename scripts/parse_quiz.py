@@ -3,18 +3,18 @@ import json
 import argparse
 
 def main():
-    parser = argparse.ArgumentParser(description='Parse quiz JSON from stdin.')
-    # No arguments needed as we read from stdin
+    parser = argparse.ArgumentParser(description='Parse quiz JSON provided as a command-line argument.')
+    parser.add_argument('quiz_json', help='The JSON string representing the quiz data.')
     args = parser.parse_args()
 
     try:
-        quiz_json_str = sys.stdin.read()
+        quiz_json_str = args.quiz_json
         if not quiz_json_str:
-            print("Error: No JSON input received.", file=sys.stderr)
+            print("Error: No JSON input provided via argument.", file=sys.stderr)
             sys.exit(1)
 
         # Print the received JSON string to stderr for debugging
-        print("Received JSON:", quiz_json_str, file=sys.stderr)
+        print("Received JSON argument:", quiz_json_str, file=sys.stderr) # Modified log message
 
         quiz_data = json.loads(quiz_json_str)
 

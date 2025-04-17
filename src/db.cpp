@@ -22,7 +22,8 @@ struct PipeResult {
     int exit_code;
 };
 
-PipeResult exec_pipe(const std::string& cmd, const std::string& input) {
+// The 'input' parameter is no longer used for stdin with popen mode "r"
+PipeResult exec_pipe(const std::string& cmd, const std::string& /* input */) {
     PipeResult result;
     result.exit_code = -1; // Default error code
 
@@ -39,9 +40,7 @@ struct PipeCloser {
     }
 };
 
-    // Use the custom deleter PipeCloser
-    // Use popen directly with mode "w" and remove "2>&1" redirection
-    std::unique_ptr<FILE, PipeCloser> pipe(popen(cmd.c_str(), "w")); // Changed mode to "w", removed " 2>&1"
+    std::unique_ptr<FILE, PipeCloser> pipe(popen(cmd.c_str(), "r")); // Changed mode to "r"
 
     if (!pipe) {
         // Capture errno immediately after the failed call
@@ -50,36 +49,11 @@ struct PipeCloser {
         return result;
     }
 
-    // Write input to the script's stdin
-    if (fwrite(input.c_str(), 1, input.size(), pipe.get()) != input.size()) {
-         result.error = "Failed to write to pipe stdin";
-         // Should probably close pipe here, but unique_ptr handles it
-         return result;
-    }
-    // Indicate end of input for stdin (important!)
-    fflush(pipe.get());
-     // Close the write end of the pipe to signal EOF to the script
-    // This might require platform-specific handling or separate pipes if bidirectional communication is needed.
-    // For simple stdin->stdout, closing write handle might be complex with popen.
-    // Let's rely on the script reading until EOF.
-
-    // Read the script's output from stdout - THIS WILL NOT WORK WITH MODE "w"
-    // Commenting out temporarily to fix popen EINVAL. Output will be lost.
-    /*
+    std::array<char, 256> buffer; // Buffer for reading output
+    result.output = ""; // Initialize output string
     while (fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr) {
         result.output += buffer.data();
     }
-    */
-    // Since reading is commented out, result.output will remain empty.
-
-    // unique_ptr with custom deleter handles closing the pipe automatically when it goes out of scope.
-    // We need to capture the exit code *before* the unique_ptr is destroyed.
-    // This is tricky with popen as closing the pipe gives the exit status.
-    // Let's capture the exit code after reading is done, but before unique_ptr destructs.
-    // Note: Releasing and manually closing might be needed if exit code is strictly required *before* potential exceptions during output processing.
-    // However, for this flow, letting unique_ptr manage closure is cleaner.
-    // The exit code might be retrieved differently depending on exact needs and error handling strategy.
-    // A simple approach is to close manually *after* reading.
     FILE* pipe_ptr = pipe.release(); // Release ownership from unique_ptr
     if (pipe_ptr) {
          result.exit_code = PCLOSE(pipe_ptr);
@@ -89,13 +63,6 @@ struct PipeCloser {
          // Consider more robust error checking if PCLOSE failure is critical.
     }
 
-
-    // Note: A more robust solution might use platform-specific APIs
-    // (CreateProcess on Windows, fork/exec/pipe on Linux) for better control
-    // over stdin/stdout/stderr redirection and process management.
-    // This popen approach is simpler but has limitations.
-    // We are also combining stdout and stderr here for simplicity. A real implementation
-    // might want to capture them separately.
 
     return result;
 }
@@ -383,23 +350,21 @@ std::string get_quiz_content(const int64_t quiz_id, const int64_t user_id){
 
 // Add Quiz Data using Python script for parsing
 int add_quiz(int64_t user_id, const std::string& quiz_json_str) {
-    std::string command = "python3 scripts/parse_quiz.py"; // Revert back to python3 for Linux
+    std::string command = "python3 scripts/parse_quiz.py '" + quiz_json_str + "'";
     std::cerr << "Executing Python command: " << command << std::endl; // Log the command
 
-    PipeResult script_result = exec_pipe(command, quiz_json_str);
+    PipeResult script_result = exec_pipe(command, "");
 
     std::cerr << "Python script output (combined):\n" << script_result.output << std::endl; // Log the output
     std::cerr << "Python script error:\n" << script_result.error << std::endl; // Log the error
     std::cerr << "Python script exit code: " << script_result.exit_code << std::endl; // Log the exit code
 
-    // Check script execution result
-    if (script_result.exit_code != 0) {
+   if (script_result.exit_code != 0) {
         std::cerr << "Python script execution failed. Exit code: " << script_result.exit_code << std::endl;
         std::cerr << "Script output/error: " << script_result.output << std::endl; // Combined output/error
         return -6; // Indicate script error
     }
 
-    // Parse the output from the script
     std::stringstream ss(script_result.output);
     std::string line;
     std::string quiz_name;
