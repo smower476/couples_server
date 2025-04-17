@@ -13,6 +13,9 @@ def main():
             print("Error: No JSON input received.", file=sys.stderr)
             sys.exit(1)
 
+        # Print the received JSON string to stderr for debugging
+        print("Received JSON:", quiz_json_str, file=sys.stderr)
+
         quiz_data = json.loads(quiz_json_str)
 
         # --- Output format for C++ ---

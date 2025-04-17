@@ -380,7 +380,7 @@ std::string get_quiz_content(const int64_t quiz_id, const int64_t user_id){
 
 // Add Quiz Data using Python script for parsing
 int add_quiz(int64_t user_id, const std::string& quiz_json_str) {
-    std::string command = "python scripts/parse_quiz.py"; // Ensure python is in PATH and script path is correct
+    std::string command = "python3 scripts/parse_quiz.py"; // Ensure python is in PATH and script path is correct
     std::cerr << "Executing Python command: " << command << std::endl; // Log the command
 
     PipeResult script_result = exec_pipe(command, quiz_json_str);

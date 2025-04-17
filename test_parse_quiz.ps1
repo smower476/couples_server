@@ -1,31 +1,4 @@
-# PowerShell script to add a quiz
-
-# Fixed username and password for the test user
-$USERNAME = "testuser"
-$PASSWORD = "testpassword"
-
-# Create a new user
-Write-Host "Creating a new user..."
-$createUserResponse = Invoke-RestMethod -Uri "http://localhost:8080/add-user?username=$USERNAME&password=$PASSWORD" -Method Post
-Write-Host "Create User Response: $($createUserResponse | ConvertTo-Json)"
-
-# Login and get the JWT token
-Write-Host "Logging in and getting JWT token..."
-$loginResponse = Invoke-RestMethod -Uri "http://localhost:8080/login?username=$USERNAME&password=$PASSWORD" -Method Get
-Write-Host "Login Response: $($loginResponse | ConvertTo-Json)"
-
-# Extract the token
-$TOKEN = $loginResponse
-
-# Check if token is empty
-if ([string]::IsNullOrEmpty($TOKEN)) {
-    Write-Host "Error: Failed to retrieve JWT token. Aborting."
-    exit 1
-}
-
-Write-Host "JWT Token: $TOKEN"
-
-# The Quiz JSON payload
+# test_parse_quiz.ps1
 $QUIZ_JSON = @'
 {
     "quizName": "Quiz Example",
@@ -136,17 +109,5 @@ $QUIZ_JSON = @'
 }
 '@
 
-Write-Host "Attempting to add quiz..."
-
-# Send the POST request using curl
-$headers = @{
-    "Content-Type" = "application/json"
-}
-
-$uri = "http://localhost:8080/add-quiz?token=$TOKEN"
-
-Invoke-RestMethod -Uri $uri -Method Post -Headers $headers -Body $QUIZ_JSON
-
-Write-Host # Add a newline for cleaner output
-
-Write-Host "Request sent."
+# Pipe the JSON to the Python script
+$QUIZ_JSON | py scripts/parse_quiz.py
