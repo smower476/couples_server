@@ -168,25 +168,29 @@ bool validate_user(const std::string& username, const std::string& password) {
 }
 std::int64_t get_user_id(const std::string& jwt){
     try {
-        std::string username = decode_jwt(jwt);
-        pqxx::work txn(conn);
+        std::string username = decode_jwt(jwt); // Can throw std::exception
+        pqxx::read_transaction txn(conn); // Use read transaction for SELECT
         std::string query = "SELECT id FROM users WHERE username = $1;";
 
         std::cout << "executing query: " << query << " with username: " << username << std::endl;
 
-        //pqxx::result result = txn.exec_params(query, username);
-        pqxx::row result = txn.exec_params1(query, username);
+        pqxx::row result = txn.exec_params1(query, username); // Expects exactly one user
         int64_t id = result[0].as<std::int64_t>();
-        txn.commit();
+        // No commit needed for read_transaction
         std::cout<<"\n USER ID " << id << "\n";
         return id;
+    } catch (const pqxx::unexpected_rows &) {
+        // Username not found in database (or multiple found, which is unlikely)
+        std::cerr << "error: user not found for provided token (username: " << decode_jwt(jwt) << ")" << std::endl; // Decode again for logging, consider efficiency
+        return -3; // Specific error code for user not found
     } catch (const pqxx::sql_error &e) {
         std::cerr << "sql error: " << e.what() << std::endl;
         std::cerr << "failed query: " << e.query() << std::endl;
-        return -1;
+        return -1; // SQL error
     } catch (const std::exception &e) {
-        std::cerr << "error: failed to process db request: " << e.what() << std::endl;
-        return -2;
+        // Could be JWT decode error or other std::exception
+        std::cerr << "error: failed to process db request (get_user_id): " << e.what() << std::endl;
+        return -2; // Other errors (e.g., JWT decode)
     }
 }
 int64_t generate_link_code(const int64_t id){
