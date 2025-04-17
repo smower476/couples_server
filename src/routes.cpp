@@ -4,8 +4,6 @@
 #include "../include/regex.h"
 #include <cstdint>
 #include <string>
-#include <nlohmann/json.hpp> // Assuming nlohmann/json is used for JSON parsing
-using json = nlohmann::json;
 
 //  Add User
 std::shared_ptr<http_response> add_user_resource::render(const http_request& req) {
@@ -138,17 +136,8 @@ std::shared_ptr<http_response> add_quiz_resource::render(const http_request& req
         return std::make_shared<string_response>(R"({"error": "Missing quiz data in request body"})", 400, "application/json");
     }
 
-    // Optional: Validate JSON structure here if needed before passing to DB function
-    try {
-        json quiz_data = json::parse(quiz_json_str);
-        // Add more specific validation if required (e.g., check for quizName, questions)
-        if (!quiz_data.contains("quizName") || !quiz_data.contains("questions")) {
-             return std::make_shared<string_response>(R"({"error": "Invalid quiz JSON structure"})", 400, "application/json");
-        }
-    } catch (json::parse_error& e) {
-        std::cerr << "JSON parse error: " << e.what() << std::endl;
-        return std::make_shared<string_response>(R"({"error": "Invalid JSON format"})", 400, "application/json");
-    }
+    // JSON validation is now handled by the Python script.
+    // We proceed directly to calling the database function.
 
     // Call database function to add the quiz
     // Assuming a function like: int add_quiz(int64_t user_id, const std::string& quiz_json);
