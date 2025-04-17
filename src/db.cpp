@@ -39,7 +39,6 @@ struct PipeCloser {
     }
 };
 
-    std::array<char, 128> buffer;
     // Use the custom deleter PipeCloser
     // Use popen directly with mode "w" and remove "2>&1" redirection
     std::unique_ptr<FILE, PipeCloser> pipe(popen(cmd.c_str(), "w")); // Changed mode to "w", removed " 2>&1"
