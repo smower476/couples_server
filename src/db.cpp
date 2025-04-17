@@ -262,32 +262,41 @@ int link_user(const int link_token, const std::string &jwt){
     }
 }
 
-std::string get_daily_quiz(const int64_t id){
+int64_t get_daily_quiz(const int64_t id){
     try {
         pqxx::work txn(conn);
-        std::string query = R"(SELECT json_agg(q) FROM (
-            SELECT * FROM quiz
+        // Select only the ID of the latest quiz (public or user's)
+        std::string query = R"(
+            SELECT id FROM quiz
             WHERE belongs_to = 0 OR belongs_to = $1
             ORDER BY created_at DESC
-            LIMIT 1) q
+            LIMIT 1
         )";
 
         std::cout << "executing query: " << query << " with id: " << id << std::endl;
+        // Use exec_params01 to handle 0 or 1 result row
         pqxx::result result = txn.exec_params(query, id);
 
-std::string daily_quiz_json = result[0][0].as<std::string>();
+        txn.commit(); // Commit the transaction
 
-        txn.commit();
-        std::cout<<"\n daily quiz json " << daily_quiz_json << "\n";
+        if (result.empty()) {
+            std::cout << "\n No daily quiz found for user id: " << id << "\n";
+            return -1; // Return -1 if no quiz is found
+        }
 
-        return daily_quiz_json;
+        int64_t quiz_id = result[0][0].as<int64_t>();
+        std::cout << "\n Daily quiz ID: " << quiz_id << "\n";
+        return quiz_id;
+
     } catch (const pqxx::sql_error &e) {
         std::cerr << "sql error: " << e.what() << std::endl;
         std::cerr << "failed query: " << e.query() << std::endl;
-        throw;
+        // Consider returning an error code instead of throwing, consistent with other functions
+        return -2; // Indicate SQL error
     } catch (const std::exception &e) {
         std::cerr << "error: failed to process db request: " << e.what() << std::endl;
-        throw;
+         // Consider returning an error code instead of throwing
+        return -3; // Indicate other exception
     }
 }
 

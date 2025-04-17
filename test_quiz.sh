@@ -5,9 +5,9 @@ ADDRESS=localhost:8080
 LOGIN=testuser1_6
 PASSWORD=secretsecret1
 
-# Create users
-curl -X POST http://$ADDRESS/add-user -d "username=$LOGIN&password=$PASSWORD"
-printf "\n"
+# # Create users
+# curl -X POST http://$ADDRESS/add-user -d "username=$LOGIN&password=$PASSWORD"
+# printf "\n"
 
 # Get JWT token
 JWT=$(curl -X POST http://$ADDRESS/login -d "username=$LOGIN&password=$PASSWORD")
@@ -18,5 +18,5 @@ printf "\n"
 curl -X POST http://$ADDRESS/get-daily-quiz -d "token=$JWT"
 printf "\n"
 
-# Get quiz content
-curl -X POST http://$ADDRESS/get-quiz-content -d "token=$JWT&quiz_id=0"
+# # Get quiz content
+# curl -X POST http://$ADDRESS/get-quiz-content -d "token=$JWT&quiz_id=0"

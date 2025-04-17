@@ -65,12 +65,24 @@ std::shared_ptr<http_response> get_daily_quiz_resource::render(const http_reques
     if (id == -2) return std::make_shared<string_response>("Invalid JWT token", 401, "text/plain");
     if (id == -1) return std::make_shared<string_response>("Internal Server Error", 500, "text/plain");
 
-    std::string daily_quiz = get_daily_quiz( id);
-    
-    if (daily_quiz.empty()) return std::make_shared<string_response>("Internal Server Error", 500, "text/plain");
+    // Get the ID of the latest daily quiz
+    int64_t quiz_id = get_daily_quiz(id);
 
-
-    return std::make_shared<string_response>(daily_quiz, 200, "text/plain");
+    // Check the result from the database function
+    if (quiz_id < 0) {
+        // Handle errors based on the returned code
+        if (quiz_id == -1) {
+            // Quiz not found
+            return std::make_shared<string_response>("No daily quiz available.", 404, "text/plain");
+        } else {
+            // Database error (-2 or -3)
+            return std::make_shared<string_response>("Server error retrieving quiz.", 500, "text/plain");
+        }
+    } else {
+        // Success: Convert the quiz ID to a string and return it
+        std::string quiz_id_str = std::to_string(quiz_id);
+        return std::make_shared<string_response>(quiz_id_str, 200, "text/plain");
+    }
 }
 
 std::shared_ptr<http_response> get_quiz_content_resource::render(const http_request& req) {
