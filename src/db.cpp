@@ -6,6 +6,8 @@
 #include <sodium.h>
 #include <cstdlib>
 #include <cstdio> // For popen, pclose, FILE
+#include <cerrno> // For errno
+#include <cstring> // For strerror
 #include <memory> // For unique_ptr
 #include <stdexcept> // For runtime_error
 #include <array> // For buffer
@@ -24,30 +26,28 @@ PipeResult exec_pipe(const std::string& cmd, const std::string& input) {
     PipeResult result;
     result.exit_code = -1; // Default error code
 
-#ifdef _WIN32
-    #define POPEN _popen
-    #define PCLOSE _pclose
-#else
-    #define POPEN popen
-    #define PCLOSE pclose
-#endif
+// Define POPEN and PCLOSE directly for Linux
+#define POPEN popen
+#define PCLOSE pclose
 
-// Custom deleter for FILE* from popen - Defined *after* PCLOSE macro
+// Custom deleter for FILE* from popen
 struct PipeCloser {
     void operator()(FILE* pipe) const {
         if (pipe) {
-            // PCLOSE is defined by the preprocessor block above
-            PCLOSE(pipe);
+            PCLOSE(pipe); // Use pclose directly
         }
     }
 };
 
     std::array<char, 128> buffer;
-    // Use the custom deleter PipeCloser instead of decltype(&PCLOSE)
-    std::unique_ptr<FILE, PipeCloser> pipe(POPEN((cmd + " 2>&1").c_str(), "w+"));
+    // Use the custom deleter PipeCloser
+    // Use popen directly
+    std::unique_ptr<FILE, PipeCloser> pipe(popen((cmd + " 2>&1").c_str(), "w+"));
 
     if (!pipe) {
-        result.error = "popen() failed!";
+        // Capture errno immediately after the failed call
+        int error_code = errno;
+        result.error = "popen() failed! errno: " + std::to_string(error_code) + " (" + strerror(error_code) + ")";
         return result;
     }
 
@@ -380,7 +380,7 @@ std::string get_quiz_content(const int64_t quiz_id, const int64_t user_id){
 
 // Add Quiz Data using Python script for parsing
 int add_quiz(int64_t user_id, const std::string& quiz_json_str) {
-    std::string command = "python scripts/parse_quiz.py"; // Ensure python is in PATH and script path is correct
+    std::string command = "python3 scripts/parse_quiz.py"; // Revert back to python3 for Linux
     std::cerr << "Executing Python command: " << command << std::endl; // Log the command
 
     PipeResult script_result = exec_pipe(command, quiz_json_str);
