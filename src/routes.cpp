@@ -120,7 +120,7 @@ std::shared_ptr<http_response> validate_resource::render(const http_request& req
 // Add Quiz
 std::shared_ptr<http_response> add_quiz_resource::render(const http_request& req) {
     std::string jwt = req.get_arg("token"); // Assuming token is passed as an argument
-    std::string quiz_json_str = req.get_content();
+    std::string quiz_json_str(req.get_content()); // Explicitly construct std::string from std::string_view
 
     // Validate JWT and get user ID
     int64_t user_id = get_user_id(jwt);
