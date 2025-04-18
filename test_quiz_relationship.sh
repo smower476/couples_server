@@ -38,7 +38,7 @@ read -r -d '' QUIZ_JSON << EOM
                 "A": { "optionText": "Reading a book" },
                 "B": { "optionText": "Watching a movie" },
                 "C": { "optionText": "Taking a bath" },
-                "D": { "optionText": "Going for a walk" },
+                "D": { "optionText": "Going for a walk" }
             },
             "questionAnswer": "The answer depends on the partner"
         },
@@ -148,4 +148,7 @@ echo "Attempting to add quiz..."
 ADD_RESPONSE=$(curl -s -X POST "$BASE_URL/add-quiz?token=$TOKEN" \
      -H "Content-Type: application/json" \
      -d "$PROCESSED_QUIZ_JSON")
+
+echo # Add a newline for cleaner output
+echo "Add Quiz Response: $ADD_RESPONSE"
 echo "Request sent."

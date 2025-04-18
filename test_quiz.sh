@@ -14,9 +14,13 @@ JWT=$(curl -X POST http://$ADDRESS/login -d "username=$LOGIN&password=$PASSWORD"
 echo $JWT
 printf "\n"
 
-# Get most recent available qiuz data
-curl -X POST http://$ADDRESS/get-daily-quiz -d "token=$JWT"
+# Get most recent available quiz ID
+echo "Fetching daily quiz ID..."
+# Use -s for silent mode to only output the body (the ID)
+QUIZ_ID=$(curl -s -X POST http://$ADDRESS/get-daily-quiz -d "token=$JWT")
+echo "Daily Quiz ID: $QUIZ_ID"
 printf "\n"
 
-# Get quiz content
-curl -X POST http://$ADDRESS/get-quiz-content -d "token=$JWT&quiz_id=0"
+# Get quiz content using the fetched ID
+echo "Fetching content for Quiz ID: $QUIZ_ID..."
+curl -X POST http://$ADDRESS/get-quiz-content -d "token=$JWT&quiz_id=$QUIZ_ID"
