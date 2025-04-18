@@ -378,7 +378,7 @@ int add_quiz(int64_t user_id, const std::string& quiz_json_str) {
     escaped_json_str += "'"; // End with single quote
 
     // Construct the command to execute the Python script with the JSON string as an argument
-    std::string command = "python3 ./scripts/parse_quiz.py " + escaped_json_str;
+    std::string command = "python3 scripts/parse_quiz.py " + escaped_json_str;
     // Log a simplified version for clarity, avoiding potentially huge JSON strings in logs
     std::cerr << "Executing Python command: python3 scripts/parse_quiz.py '<JSON_DATA>'" << std::endl;
 
