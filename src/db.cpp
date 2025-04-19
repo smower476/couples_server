@@ -473,7 +473,7 @@ int add_quiz(int64_t user_id, const std::string& quiz_json_str) {
         // 1. Insert into quiz table
         std::string insert_quiz_query = R"(
             INSERT INTO quiz (quiz_name, created_at, belongs_to)
-            VALUES ($1, NOW(), $2)
+            VALUES ($1, NOW(), 0)
             RETURNING id
         )";
         std::cerr << "Executing query: " << insert_quiz_query << " with quiz_name=" << quiz_name << " and user_id=" << user_id << std::endl;
