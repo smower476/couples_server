@@ -364,8 +364,9 @@ std::string get_quiz_content(const int64_t quiz_id, const int64_t user_id){
 #include <filesystem>
 
 // Add Quiz Data using Python script for parsing
-int add_quiz(int64_t user_id, const std::string& quiz_json_str) {
-    std::cout << "Entering add_quiz for user_id: " << user_id << std::endl;
+int add_quiz(int64_t user_id, const std::string& quiz_json_str, bool public_quiz = false) {
+    std::cout << "Entering add_quiz for user_id: " << user_id 
+              << ", public_quiz: " << (public_quiz ? "true" : "false") << std::endl;
     // Escape the JSON string for safe command-line argument passing
     // Replace single quotes with '\'' (end quote, escaped quote, start quote) and wrap in single quotes.
     std::string escaped_json_str = "'"; // Start with single quote
@@ -473,11 +474,16 @@ int add_quiz(int64_t user_id, const std::string& quiz_json_str) {
         // 1. Insert into quiz table
         std::string insert_quiz_query = R"(
             INSERT INTO quiz (quiz_name, created_at, belongs_to)
-            VALUES ($1, NOW(), 0)
+            VALUES ($1, NOW(), $2)
             RETURNING id
         )";
-        std::cerr << "Executing query: " << insert_quiz_query << " with quiz_name=" << quiz_name << std::endl;
-        pqxx::row quiz_result = txn.exec_params1(insert_quiz_query, quiz_name);
+        
+        // Set belongs_to to 0 if public, otherwise to user_id
+        int64_t belongs_to = public_quiz ? 0 : user_id;
+        
+        std::cerr << "Executing query: " << insert_quiz_query << " with quiz_name=" << quiz_name 
+                  << ", belongs_to=" << belongs_to << std::endl;
+        pqxx::row quiz_result = txn.exec_params1(insert_quiz_query, quiz_name, belongs_to);
         int64_t new_quiz_id = quiz_result[0].as<int64_t>();
         std::cerr << "Inserted quiz, new quiz ID: " << new_quiz_id << std::endl;
 
