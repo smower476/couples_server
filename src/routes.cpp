@@ -151,10 +151,13 @@ std::shared_ptr<http_response> add_quiz_resource::render(const http_request& req
     // JSON validation is now handled by the Python script.
     // We proceed directly to calling the database function.
 
-    // Call database function to add the quiz
-    // Assuming a function like: int add_quiz(int64_t user_id, const std::string& quiz_json);
-    // It should return 0 on success, negative on error, positive if quiz already exists (adjust as needed)
-    int db_result = add_quiz(user_id, quiz_json_str);
+    // Check for the 'public' argument to determine if the quiz should be public
+    std::string public_arg = req.get_arg("public");
+    bool is_public = (public_arg == "true"); // Treat anything other than "true" as false
+
+    // Call database function to add the quiz, passing the public flag
+    // Function signature: int add_quiz(int64_t user_id, const std::string& quiz_json, bool public_quiz = false);
+    int db_result = add_quiz(user_id, quiz_json_str, is_public);
 
     if (db_result == 0) {
         return std::make_shared<string_response>(R"({"message": "Quiz added successfully"})", 201, "application/json");

@@ -364,8 +364,8 @@ std::string get_quiz_content(const int64_t quiz_id, const int64_t user_id){
 #include <filesystem>
 
 // Add Quiz Data using Python script for parsing
-int add_quiz(int64_t user_id, const std::string& quiz_json_str, bool public_quiz = false) {
-    std::cout << "Entering add_quiz for user_id: " << user_id 
+int add_quiz(int64_t user_id, const std::string& quiz_json_str, bool public_quiz=false) {
+    std::cout << "Entering add_quiz for user_id: " << user_id
               << ", public_quiz: " << (public_quiz ? "true" : "false") << std::endl;
     // Escape the JSON string for safe command-line argument passing
     // Replace single quotes with '\'' (end quote, escaped quote, start quote) and wrap in single quotes.
@@ -478,6 +478,7 @@ int add_quiz(int64_t user_id, const std::string& quiz_json_str, bool public_quiz
             RETURNING id
         )";
         
+        // Set belongs_to to 0 if public, otherwise to user_id
         // Set belongs_to to 0 if public, otherwise to user_id
         int64_t belongs_to = public_quiz ? 0 : user_id;
         
