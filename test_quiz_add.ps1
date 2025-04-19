@@ -143,7 +143,8 @@ $headers = @{
 }
 
 try {
-    $ADD_RESPONSE = Invoke-RestMethod -Method POST -Uri "$BASE_URL/add-quiz?token=$TOKEN" -Headers $headers -Body $QUIZ_JSON
+    # Added &public=true to the URI to mark the quiz as public
+    $ADD_RESPONSE = Invoke-RestMethod -Method POST -Uri "$BASE_URL/add-quiz?token=$TOKEN&public=true" -Headers $headers -Body $QUIZ_JSON
     Write-Host "Add Quiz Response: $ADD_RESPONSE"
 } 
 catch {
