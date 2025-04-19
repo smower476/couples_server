@@ -1,21 +1,20 @@
-# PowerShell script to add a quiz
+# PowerShell script to test adding a quiz
 
 # Fixed username and password for the test user
 $USERNAME = "testuser"
 $PASSWORD = "testpassword"
+$BASE_URL = "http://129.158.234.85:8080"
 
 # Create a new user
 Write-Host "Creating a new user..."
-$createUserResponse = Invoke-RestMethod -Uri "http://localhost:8080/add-user?username=$USERNAME&password=$PASSWORD" -Method Post
-Write-Host "Create User Response: $($createUserResponse | ConvertTo-Json)"
+$CREATE_RESPONSE = Invoke-RestMethod -Method POST -Uri "$BASE_URL/add-user?username=$USERNAME&password=$PASSWORD"
+Write-Host "Create User Response: $CREATE_RESPONSE"
 
 # Login and get the JWT token
 Write-Host "Logging in and getting JWT token..."
-$loginResponse = Invoke-RestMethod -Uri "http://localhost:8080/login?username=$USERNAME&password=$PASSWORD" -Method Get
-Write-Host "Login Response: $($loginResponse | ConvertTo-Json)"
-
-# Extract the token
-$TOKEN = $loginResponse
+# Assuming the endpoint returns the token directly in the body
+$TOKEN = Invoke-RestMethod -Method GET -Uri "$BASE_URL/login?username=$USERNAME&password=$PASSWORD"
+Write-Host "Login Response (Token): $TOKEN"
 
 # Check if token is empty
 if ([string]::IsNullOrEmpty($TOKEN)) {
@@ -26,131 +25,129 @@ if ([string]::IsNullOrEmpty($TOKEN)) {
 Write-Host "JWT Token: $TOKEN"
 
 # The Quiz JSON payload
-$QUIZ_JSON = @'
+$QUIZ_JSON = @"
 {
-    "quizName": "Quiz Example",
-    "quizId": "12345",
+    "quizName": "Relationship Quiz",
+    "quizId": "relationship123",
     "numberOfQuestions": 10,
     "questions": {
         "1": {
-            "question": "What is the capital of France?",
+            "question": "What is your partner's favorite way to unwind after a long day?",
             "questionOptions": {
-                "A": { "optionText": "Berlin" },
-                "B": { "optionText": "Madrid" },
-                "C": { "optionText": "Paris" },
-                "D": { "optionText": "Rome" }
+                "A": { "optionText": "Reading a book" },
+                "B": { "optionText": "Watching a movie" },
+                "C": { "optionText": "Taking a bath" },
+                "D": { "optionText": "Going for a walk" }
             },
-            "questionAnswer": "C"
+            "questionAnswer": "The answer depends on the partner"
         },
         "2": {
-            "question": "What is the largest planet in our solar system?",
+            "question": "What is one thing your partner is most proud of accomplishing?",
             "questionOptions": {
-                "A": { "optionText": "Earth" },
-                "B": { "optionText": "Jupiter" },
-                "C": { "optionText": "Mars" },
-                "D": { "optionText": "Saturn" }
+                "A": { "optionText": "Their career achievements" },
+                "B": { "optionText": "Their personal growth" },
+                "C": { "optionText": "Their relationships with family and friends" },
+                "D": { "optionText": "Their hobbies and interests" }
             },
-            "questionAnswer": "B"
+            "questionAnswer": "The answer depends on the partner"
         },
         "3": {
-            "question": "What is the chemical symbol for water?",
+            "question": "What is your partner's love language?",
             "questionOptions": {
-                "A": { "optionText": "H2O" },
-                "B": { "optionText": "O2" },
-                "C": { "optionText": "CO2" },
-                "D": { "optionText": "NaCl" }
+                "A": { "optionText": "Words of Affirmation" },
+                "B": { "optionText": "Acts of Service" },
+                "C": { "optionText": "Receiving Gifts" },
+                "D": { "optionText": "Quality Time" }
             },
-            "questionAnswer": "A"
+            "questionAnswer": "The answer depends on the partner"
         },
         "4": {
-            "question": "Who wrote 'Romeo and Juliet'?",
+            "question": "What is your partner's biggest pet peeve?",
             "questionOptions": {
-                "A": { "optionText": "Charles Dickens" },
-                "B": { "optionText": "William Shakespeare" },
-                "C": { "optionText": "Mark Twain" },
-                "D": { "optionText": "Jane Austen" }
+                "A": { "optionText": "Loud chewing" },
+                "B": { "optionText": "Being late" },
+                "C": { "optionText": "Disorganization" },
+                "D": { "optionText": "Interrupting" }
             },
-            "questionAnswer": "B"
+            "questionAnswer": "The answer depends on the partner"
         },
         "5": {
-            "question": "What is the speed of light?",
+            "question": "What is your partner's favorite food?",
             "questionOptions": {
-                "A": { "optionText": "300,000 km/s" },
-                "B": { "optionText": "150,000 km/s" },
-                "C": { "optionText": "450,000 km/s" },
-                "D": { "optionText": "600,000 km/s" }
+                "A": { "optionText": "Pizza" },
+                "B": { "optionText": "Sushi" },
+                "C": { "optionText": "Pasta" },
+                "D": { "optionText": "Tacos" }
             },
-            "questionAnswer": "A"
+            "questionAnswer": "The answer depends on the partner"
         },
         "6": {
-            "question": "What is the smallest prime number?",
+            "question": "What is your partner's dream vacation?",
             "questionOptions": {
-                "A": { "optionText": "1" },
-                "B": { "optionText": "2" },
-                "C": { "optionText": "3" },
-                "D": { "optionText": "5" }
+                "A": { "optionText": "Tropical beach" },
+                "B": { "optionText": "European city" },
+                "C": { "optionText": "Mountain retreat" },
+                "D": { "optionText": "Adventure travel" }
             },
-            "questionAnswer": "B"
+            "questionAnswer": "The answer depends on the partner"
         },
         "7": {
-            "question": "What is the boiling point of water at sea level?",
+            "question": "What is your partner's favorite holiday?",
             "questionOptions": {
-                "A": { "optionText": "90°C" },
-                "B": { "optionText": "100°C" },
-                "C": { "optionText": "110°C" },
-                "D": { "optionText": "120°C" }
+                "A": { "optionText": "Christmas" },
+                "B": { "optionText": "Thanksgiving" },
+                "C": { "optionText": "Halloween" },
+                "D": { "optionText": "Valentine's Day" }
             },
-            "questionAnswer": "B"
+            "questionAnswer": "The answer depends on the partner"
         },
         "8": {
-            "question": "Who painted the Mona Lisa?",
+            "question": "What is your partner's favorite movie genre?",
             "questionOptions": {
-                "A": { "optionText": "Vincent van Gogh" },
-                "B": { "optionText": "Pablo Picasso" },
-                "C": { "optionText": "Leonardo da Vinci" },
-                "D": { "optionText": "Claude Monet" }
+                "A": { "optionText": "Comedy" },
+                "B": { "optionText": "Action" },
+                "C": { "optionText": "Romance" },
+                "D": { "optionText": "Horror" }
             },
-            "questionAnswer": "C"
+            "questionAnswer": "The answer depends on the partner"
         },
         "9": {
-            "question": "What is the square root of 64?",
+            "question": "What is your partner's favorite book?",
             "questionOptions": {
-                "A": { "optionText": "6" },
-                "B": { "optionText": "7" },
-                "C": { "optionText": "8" },
-                "D": { "optionText": "9" }
+                "A": { "optionText": "To Kill a Mockingbird" },
+                "B": { "optionText": "Pride and Prejudice" },
+                "C": { "optionText": "1984" },
+                "D": { "optionText": "The Lord of the Rings" }
             },
-            "questionAnswer": "C"
+            "questionAnswer": "The answer depends on the partner"
         },
         "10": {
-            "question": "What is the largest ocean on Earth?",
+            "question": "What is your partner's favorite song?",
             "questionOptions": {
-                "A": { "optionText": "Atlantic Ocean" },
-                "B": { "optionText": "Indian Ocean" },
-                "C": { "optionText": "Arctic Ocean" },
-                "D": { "optionText": "Pacific Ocean" }
+                "A": { "optionText": "Bohemian Rhapsody" },
+                "B": { "optionText": "Imagine" },
+                "C": { "optionText": "Like a Rolling Stone" },
+                "D": { "optionText": "Hey Jude" }
             },
-            "questionAnswer": "D"
+            "questionAnswer": "The answer depends on the partner"
         }
     }
 }
-'@
-
-# Replace the degree symbol to match parse_quiz test
-$QUIZ_JSON = $QUIZ_JSON -replace "Â°", "°"
+"@
 
 Write-Host "Attempting to add quiz..."
 
-# Send the POST request using curl
+# Send the POST request
 $headers = @{
     "Content-Type" = "application/json"
 }
 
-$uri = "http://localhost:8080/add-quiz?token=$TOKEN"
-
-# $QUIZ_JSON is already a JSON string, no need to convert again
-Invoke-RestMethod -Uri $uri -Method Post -Headers $headers -Body $QUIZ_JSON
-
-Write-Host # Add a newline for cleaner output
+try {
+    $ADD_RESPONSE = Invoke-RestMethod -Method POST -Uri "$BASE_URL/add-quiz?token=$TOKEN" -Headers $headers -Body $QUIZ_JSON
+    Write-Host "Add Quiz Response: $ADD_RESPONSE"
+} 
+catch {
+    Write-Host "Error adding quiz: $_"
+}
 
 Write-Host "Request sent."

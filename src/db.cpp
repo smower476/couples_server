@@ -476,8 +476,8 @@ int add_quiz(int64_t user_id, const std::string& quiz_json_str) {
             VALUES ($1, NOW(), 0)
             RETURNING id
         )";
-        std::cerr << "Executing query: " << insert_quiz_query << " with quiz_name=" << quiz_name << " and user_id=" << user_id << std::endl;
-        pqxx::row quiz_result = txn.exec_params1(insert_quiz_query, quiz_name, user_id);
+        std::cerr << "Executing query: " << insert_quiz_query << " with quiz_name=" << quiz_name << std::endl;
+        pqxx::row quiz_result = txn.exec_params1(insert_quiz_query, quiz_name);
         int64_t new_quiz_id = quiz_result[0].as<int64_t>();
         std::cerr << "Inserted quiz, new quiz ID: " << new_quiz_id << std::endl;
 
