@@ -60,5 +60,6 @@ int link_user(const int link_token, const std::string &jwt);
 std::string get_daily_quiz(const int64_t id);
 std::string get_quiz_content(const int64_t quiz_id, const int64_t user_id);
 void answer_quiz(const int64_t quiz_id, const int64_t user_id, const int64_t answer);
+std::string get_user_quiz_answer(const int64_t quiz_id, const int64_t user_id);
 #endif
 

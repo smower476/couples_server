@@ -101,22 +101,25 @@ std::shared_ptr<http_response> get_quiz_content_resource::render(const http_requ
 std::shared_ptr<http_response> get_answer_quiz_resource::render(const http_request& req) {
     int64_t answer;
     int64_t quiz_id;
-    try {
-        quiz_id = std::stoll(req.get_arg("quiz_id"));
-        answer = std::stoll(req.get_arg("answer"));
-    } catch (const std::invalid_argument& e) {
-        return std::make_shared<string_response>("Invalid argument", 500, "text/plain");
-    } catch (const std::out_of_range& e) {
-        return std::make_shared<string_response>("Out of range", 500, "text/plain");
-    } catch (const std::runtime_error& e){
-        return std::make_shared<string_response>("Invalid argument", 500, "text/plain");
-    }
+    quiz_id = std::stoll(req.get_arg("quiz_id"));
+    answer = std::stoll(req.get_arg("answer"));
     std::string jwt = req.get_arg("token");
     int64_t user_id = get_user_id(jwt);     
     // TODO: add try/catch
     answer_quiz(quiz_id, user_id, answer);
 
     return std::make_shared<string_response>("Success", 200, "text/plain");
+}
+
+std::shared_ptr<http_response> get_quiz_user_answer_resource::render(const http_request& req) {
+    int64_t quiz_id;
+    quiz_id = std::stoll(req.get_arg("quiz_id"));
+    std::string jwt = req.get_arg("token");
+    int64_t user_id = get_user_id(jwt);     
+    // TODO: add try/catch
+    std::string user_answer_json= get_user_quiz_answer(quiz_id, user_id);
+
+    return std::make_shared<string_response>(user_answer_json, 200, "text/plain");
 }
 
 /*

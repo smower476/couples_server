@@ -317,3 +317,69 @@ void answer_quiz(const int64_t quiz_id, const int64_t user_id, const int64_t ans
         throw;
     }
 }
+
+std::string get_user_quiz_answer(const int64_t quiz_id, const int64_t user_id){
+    try {
+        
+        pqxx::work txn(conn);
+        std::string query = R"( 
+        WITH user_info AS (
+            SELECT id AS self_id, linked_user
+            FROM users
+            WHERE id = $1
+        ),
+        quiz_info AS (
+            SELECT q.id AS quiz_id, q.belongs_to, u.self_id, u.linked_user
+            FROM quiz q
+            JOIN user_info u ON q.id = $2
+            WHERE q.belongs_to = 0 OR q.belongs_to = u.self_id OR q.belongs_to = u.linked_user
+        ),
+        self_answer AS (
+            SELECT qua.id, qua.quiz_answer, qua.answered_at
+            FROM quiz_user_answer qua
+            JOIN user_info u ON qua.user_id = u.self_id
+            WHERE qua.quiz_id = $2
+        ),
+        linked_answer AS (
+            SELECT qua.id, qua.quiz_answer, qua.answered_at
+            FROM quiz_user_answer qua
+            JOIN user_info u ON qua.user_id = u.linked_user
+            WHERE u.linked_user IS NOT NULL AND u.linked_user != u.self_id AND qua.quiz_id = $2
+        )
+        SELECT json_build_object(
+            'self', json_build_object(
+                'id', sa.id,
+                'quiz_answer', sa.quiz_answer,
+                'answered_at', sa.answered_at
+            ),
+            'linked', CASE 
+                WHEN la.id IS NOT NULL THEN json_build_object(
+                    'id', la.id,
+                    'quiz_answer', la.quiz_answer,
+                    'answered_at', la.answered_at
+                )
+                ELSE NULL
+            END
+        ) AS result
+        FROM quiz_info qi
+        LEFT JOIN self_answer sa ON TRUE
+        LEFT JOIN linked_answer la ON TRUE;
+        )";
+
+        std::cout << "executing query: " << query << " with user id: " << user_id << " quiz_id " << quiz_id << std::endl;
+        pqxx::result result = txn.exec_params(query, user_id, quiz_id);
+        if (result.empty()) throw std::runtime_error("No valid quiz found, or user doesn't have permission to answer.");
+        txn.commit();
+        std::string user_answer_json = result[0][0].as<std::string>();
+
+        return user_answer_json;
+    } catch (const pqxx::sql_error &e) {
+        std::cerr << "sql error: " << e.what() << std::endl;
+        std::cerr << "failed query: " << e.query() << std::endl;
+        throw;
+    } catch (const std::exception &e) {
+        std::cerr << "error: failed to process db request: " << e.what() << std::endl;
+        throw;
+    }
+}
+
