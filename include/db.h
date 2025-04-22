@@ -32,7 +32,8 @@ namespace tables{
         quiz_answer BIGINT NOT NULL,
         user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
         quiz_id INT NOT NULL REFERENCES quiz(id) ON DELETE CASCADE,
-        answered_at TIMESTAMP NOT NULL
+        answered_at TIMESTAMP NOT NULL,
+        UNIQUE (user_id, quiz_id)
         ))";
 
     inline std::string create_quiz_content_table = R"(CREATE TABLE IF NOT EXISTS quiz_content (
@@ -58,5 +59,6 @@ int64_t generate_link_code(const int64_t id);
 int link_user(const int link_token, const std::string &jwt);
 std::string get_daily_quiz(const int64_t id);
 std::string get_quiz_content(const int64_t quiz_id, const int64_t user_id);
+void answer_quiz(const int64_t quiz_id, const int64_t user_id, const int64_t answer);
 #endif
 

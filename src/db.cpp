@@ -288,3 +288,32 @@ std::string get_quiz_content(const int64_t quiz_id, const int64_t user_id){
     }
 }
 
+void answer_quiz(const int64_t quiz_id, const int64_t user_id, const int64_t answer){
+    try {
+        
+        pqxx::work txn(conn);
+        std::string query = R"( 
+        WITH valid_quiz AS (
+            SELECT id FROM quiz WHERE id = $1 AND (belongs_to = $2 OR belongs_to = 0)
+        )
+        INSERT INTO quiz_user_answer (quiz_answer, user_id, quiz_id, answered_at)
+        SELECT $3, $2, id, NOW() FROM valid_quiz
+        ON CONFLICT (user_id, quiz_id)
+        DO UPDATE SET quiz_answer = EXCLUDED.quiz_answer, answered_at = EXCLUDED.answered_at
+        RETURNING 1
+        )";
+
+        std::cout << "executing query: " << query << " with user id: " << user_id << " quiz_id " << quiz_id << " answer " << answer << std::endl;
+        pqxx::result res = txn.exec_params(query, quiz_id, user_id, answer);
+        if (res.empty()) throw std::runtime_error("No valid quiz found, or user doesn't have permission to answer.");
+        txn.commit();
+    
+    } catch (const pqxx::sql_error &e) {
+        std::cerr << "sql error: " << e.what() << std::endl;
+        std::cerr << "failed query: " << e.query() << std::endl;
+        throw;
+    } catch (const std::exception &e) {
+        std::cerr << "error: failed to process db request: " << e.what() << std::endl;
+        throw;
+    }
+}

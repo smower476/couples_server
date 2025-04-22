@@ -8,9 +8,9 @@
 
 **Daily Quiz Functionality**
 
-- [ ] Quiz Retrieval:
-    - [ ] Develop `get-daily-quiz` route to fetch and deliver the daily quiz.
-    - [ ] Structure quiz data into a JSON response for the client.
+- [x] Quiz Retrieval:
+    - [x] Develop `get-daily-quiz` route to fetch and deliver the daily quiz.
+    - [x] Structure quiz data into a JSON response for the client.
 
 - [ ] Answer Processing:
     - [ ] Create `submit-quiz-answer` [POST] route for quiz submissions.
