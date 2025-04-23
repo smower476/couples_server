@@ -3,6 +3,7 @@
 #include "../include/db.h"
 #include "../include/regex.h"
 #include <cstdint>
+#include <memory>
 #include <string>
 
 //  Add User
@@ -98,16 +99,22 @@ std::shared_ptr<http_response> get_quiz_content_resource::render(const http_requ
     return std::make_shared<string_response>(quiz_content, 200, "text/plain");
 }
 
-std::shared_ptr<http_response> get_answer_quiz_resource::render(const http_request& req) {
+std::shared_ptr<http_response> answer_quiz_resource::render(const http_request& req) {
     int64_t answer;
     int64_t quiz_id;
     quiz_id = std::stoll(req.get_arg("quiz_id"));
     answer = std::stoll(req.get_arg("answer"));
     std::string jwt = req.get_arg("token");
     int64_t user_id = get_user_id(jwt);     
-    // TODO: add try/catch
-    answer_quiz(quiz_id, user_id, answer);
-
+    if (user_id == -2) return std::make_shared<string_response>("Invalid JWT token", 401, "text/plain");
+    if (user_id == -1) return std::make_shared<string_response>("Internal Server Error", 500, "text/plain");
+    try {
+        answer_quiz(quiz_id, user_id, answer);
+    }  catch (const pqxx::sql_error &e) {
+        return std::make_shared<string_response>(e.what(), 500, "text/plain");
+    } catch (const std::exception &e) {   
+       return std::make_shared<string_response>("Internal Server Error", 500, "text/plain");
+    }
     return std::make_shared<string_response>("Success", 200, "text/plain");
 }
 
@@ -116,8 +123,18 @@ std::shared_ptr<http_response> get_quiz_user_answer_resource::render(const http_
     quiz_id = std::stoll(req.get_arg("quiz_id"));
     std::string jwt = req.get_arg("token");
     int64_t user_id = get_user_id(jwt);     
-    // TODO: add try/catch
-    std::string user_answer_json= get_user_quiz_answer(quiz_id, user_id);
+
+    if (user_id == -2) return std::make_shared<string_response>("Invalid JWT token", 401, "text/plain");
+    if (user_id == -1) return std::make_shared<string_response>("Internal Server Error", 500, "text/plain");
+
+    std::string user_answer_json;
+    try {
+        user_answer_json = get_user_quiz_answer(quiz_id, user_id);
+    }  catch (const pqxx::sql_error &e) {
+        return std::make_shared<string_response>(e.what(), 500, "text/plain");
+    } catch (const std::exception &e) {   
+       return std::make_shared<string_response>("Internal Server Error", 500, "text/plain");
+    }
 
     return std::make_shared<string_response>(user_answer_json, 200, "text/plain");
 }
@@ -127,9 +144,14 @@ std::shared_ptr<http_response> get_answered_quizes_resource::render(const http_r
     int64_t id = get_user_id(jwt);
     if (id == -2) return std::make_shared<string_response>("Invalid JWT token", 401, "text/plain");
     if (id == -1) return std::make_shared<string_response>("Internal Server Error", 500, "text/plain");
-
-    std::string answered_quizes = get_answered_quizes( id);
-    
+    std::string answered_quizes;
+    try {
+        answered_quizes = get_unanswered_quizes(id);
+    }  catch (const pqxx::sql_error &e) {
+        return std::make_shared<string_response>(e.what(), 500, "text/plain");
+    } catch (const std::exception &e) {   
+       return std::make_shared<string_response>("Internal Server Error", 500, "text/plain");
+    }
     return std::make_shared<string_response>(answered_quizes, 200, "text/plain");
 }
 
@@ -138,9 +160,14 @@ std::shared_ptr<http_response> get_unanswered_quizes_resource::render(const http
     int64_t id = get_user_id(jwt);
     if (id == -2) return std::make_shared<string_response>("Invalid JWT token", 401, "text/plain");
     if (id == -1) return std::make_shared<string_response>("Internal Server Error", 500, "text/plain");
-
-    std::string unanswered_quizes = get_unanswered_quizes(id);
-    
+    std::string unanswered_quizes;
+    try {
+        unanswered_quizes = get_unanswered_quizes(id);
+    }  catch (const pqxx::sql_error &e) {
+        return std::make_shared<string_response>(e.what(), 500, "text/plain");
+    } catch (const std::exception &e) {   
+       return std::make_shared<string_response>("Internal Server Error", 500, "text/plain");
+    }
     return std::make_shared<string_response>(unanswered_quizes, 200, "text/plain");
 }
 

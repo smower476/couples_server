@@ -467,6 +467,3 @@ std::string get_answered_quizes(const int64_t user_id){
         throw;
     }
 }
-
-
-
