@@ -32,7 +32,9 @@ int main() {
     get_quiz_content_resource get_quiz_content_res;
     get_answer_quiz_resource get_answer_quiz_res;
     get_quiz_user_answer_resource get_quiz_user_answer_res;
-
+    get_answered_quizes_resource get_answered_quizes_res;
+    get_unanswered_quizes_resource get_unanswered_quizes_res;
+    
     ws.register_resource("/login", &login_res); // Login endpoint
 //    ws.register_resource("/validate-token", &validate_res);  // Token validation endpoint
     ws.register_resource("/add-user", &add_user_res);        // User creation endpoint
@@ -42,7 +44,9 @@ int main() {
     ws.register_resource("/get-quiz-content", &get_quiz_content_res);
     ws.register_resource("/answer-quiz", &get_answer_quiz_res);
     ws.register_resource("/get-quiz-user-answer", &get_quiz_user_answer_res);
-
+    ws.register_resource("/get-answered-quizes", &get_answered_quizes_res);
+    ws.register_resource("/get-unanswered-quizes", &get_unanswered_quizes_res);
+    
     std::cout << "Server running on http://localhost:" << PORT << "\n";
 
     ws.start(true);

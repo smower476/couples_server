@@ -27,4 +27,13 @@ printf "\n"
 printf "\n"
 
 # Get quiz user answer
-curl -X POST http://$ADDRESS/get-quiz-user-answer -d "token=$JWT&quiz_id=1065019527751499777"
+#curl -X POST http://$ADDRESS/get-quiz-user-answer -d "token=$JWT&quiz_id=1065019527751499777"
+printf "\n"
+
+# Get answered quizes
+curl -X POST http://$ADDRESS/get-answered-quizes -d "token=$JWT"
+printf "\n"
+
+#Get unanswered quizes
+curl -X POST http://$ADDRESS/get-unanswered-quizes -d "token=$JWT"
+printf "\n"

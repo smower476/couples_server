@@ -122,6 +122,29 @@ std::shared_ptr<http_response> get_quiz_user_answer_resource::render(const http_
     return std::make_shared<string_response>(user_answer_json, 200, "text/plain");
 }
 
+std::shared_ptr<http_response> get_answered_quizes_resource::render(const http_request& req) {
+    std::string jwt = req.get_arg("token");
+    int64_t id = get_user_id(jwt);
+    if (id == -2) return std::make_shared<string_response>("Invalid JWT token", 401, "text/plain");
+    if (id == -1) return std::make_shared<string_response>("Internal Server Error", 500, "text/plain");
+
+    std::string answered_quizes = get_answered_quizes( id);
+    
+    return std::make_shared<string_response>(answered_quizes, 200, "text/plain");
+}
+
+std::shared_ptr<http_response> get_unanswered_quizes_resource::render(const http_request& req) {
+    std::string jwt = req.get_arg("token");
+    int64_t id = get_user_id(jwt);
+    if (id == -2) return std::make_shared<string_response>("Invalid JWT token", 401, "text/plain");
+    if (id == -1) return std::make_shared<string_response>("Internal Server Error", 500, "text/plain");
+
+    std::string unanswered_quizes = get_unanswered_quizes(id);
+    
+    return std::make_shared<string_response>(unanswered_quizes, 200, "text/plain");
+}
+
+
 /*
 // Validate JWT Token
 std::shared_ptr<http_response> validate_resource::render(const http_request& req) {

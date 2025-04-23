@@ -383,3 +383,90 @@ std::string get_user_quiz_answer(const int64_t quiz_id, const int64_t user_id){
     }
 }
 
+std::string get_unanswered_quizes(const int64_t user_id){
+    try {
+        
+        pqxx::work txn(conn);
+        std::string query = R"( 
+        SELECT COALESCE(json_agg(q_item), '[]') AS quizzes
+          FROM (
+            SELECT
+              q.id,
+              q.quiz_name,
+              q.created_at,
+              q.belongs_to
+            FROM quiz q
+            LEFT JOIN quiz_user_answer ua
+              ON ua.quiz_id = q.id
+             AND ua.user_id = $1
+            WHERE (q.belongs_to = 0 OR q.belongs_to = $1)
+              AND ua.id IS NULL
+            ORDER BY q.created_at DESC
+          ) AS q_item
+        )";
+
+        std::cout << "executing query: " << query << " with user id: " << user_id << " quiz_id " << std::endl;
+        pqxx::result result = txn.exec_params(query, user_id);
+        if (result.empty()) throw std::runtime_error("No valid quiz found, or user doesn't have permission to answer.");
+        txn.commit();
+        std::string user_answer_json = result[0][0].as<std::string>();
+
+        return user_answer_json;
+    } catch (const pqxx::sql_error &e) {
+        std::cerr << "sql error: " << e.what() << std::endl;
+        std::cerr << "failed query: " << e.query() << std::endl;
+        throw;
+    } catch (const std::exception &e) {
+        std::cerr << "error: failed to process db request: " << e.what() << std::endl;
+        throw;
+    }
+}
+
+std::string get_answered_quizes(const int64_t user_id){
+    try {
+        
+        pqxx::work txn(conn);
+        std::string query = R"( 
+        SELECT COALESCE(
+            json_agg(
+              json_build_object(
+                'quiz_id',    q.id,
+                'quiz_name',  q.quiz_name,
+                'created_at', to_char(q.created_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"'),
+                'belongs_to', q.belongs_to,
+                'user_answer', json_build_object(
+                   'answer_id',   qu.id,
+                   'quiz_answer', qu.quiz_answer,
+                   'answered_at', to_char(qu.answered_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"')
+                )
+              )
+            )
+          , '[]'
+          ) AS quizzes
+        FROM quiz q
+          JOIN quiz_user_answer qu
+            ON qu.quiz_id = q.id
+           AND qu.user_id = $1
+        WHERE q.belongs_to = 0
+           OR q.belongs_to = $1;
+        )";
+
+        std::cout << "executing query: " << query << " with user id: " << user_id << " quiz_id " << std::endl;
+        pqxx::result result = txn.exec_params(query, user_id);
+        if (result.empty()) throw std::runtime_error("No valid quiz found, or user doesn't have permission to answer.");
+        txn.commit();
+        std::string user_answer_json = result[0][0].as<std::string>();
+
+        return user_answer_json;
+    } catch (const pqxx::sql_error &e) {
+        std::cerr << "sql error: " << e.what() << std::endl;
+        std::cerr << "failed query: " << e.query() << std::endl;
+        throw;
+    } catch (const std::exception &e) {
+        std::cerr << "error: failed to process db request: " << e.what() << std::endl;
+        throw;
+    }
+}
+
+
+
