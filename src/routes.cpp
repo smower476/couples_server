@@ -146,7 +146,7 @@ std::shared_ptr<http_response> get_answered_quizes_resource::render(const http_r
     if (id == -1) return std::make_shared<string_response>("Internal Server Error", 500, "text/plain");
     std::string answered_quizes;
     try {
-        answered_quizes = get_unanswered_quizes(id);
+        answered_quizes = get_answered_quizes(id);
     }  catch (const pqxx::sql_error &e) {
         return std::make_shared<string_response>(e.what(), 500, "text/plain");
     } catch (const std::exception &e) {   
