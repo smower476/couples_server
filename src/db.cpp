@@ -405,7 +405,7 @@ std::string get_unanswered_quizes(const int64_t user_id){
           ) AS q_item
         )";
 
-        std::cout << "executing query: " << query << " with user id: " << user_id << " quiz_id " << std::endl;
+        std::cout << "executing query: " << query << " with user id: " << user_id << std::endl;
         pqxx::result result = txn.exec_params(query, user_id);
         txn.commit();
         std::string user_answer_json = result[0][0].as<std::string>();
@@ -449,7 +449,7 @@ std::string get_answered_quizes(const int64_t user_id){
            OR q.belongs_to = $1;
         )";
 
-        std::cout << "executing query: " << query << " with user id: " << user_id << " quiz_id " << std::endl;
+        std::cout << "executing query: " << query << " with user id: " << user_id << std::endl;
         pqxx::result result = txn.exec_params(query, user_id);
         txn.commit();
         std::string user_answer_json = result[0][0].as<std::string>();
@@ -464,3 +464,46 @@ std::string get_answered_quizes(const int64_t user_id){
         throw;
     }
 }
+
+std::string get_unanswered_quizzes_for_pair(const int64_t user_id){
+    try {
+        pqxx::work txn(conn);
+        std::string query = R"( 
+            SELECT COALESCE(json_agg(q_item), '[]') AS quizzes
+            FROM (
+              SELECT
+                q.id,
+                q.quiz_name,
+                q.created_at,
+                q.belongs_to
+              FROM quiz q
+              LEFT JOIN quiz_user_answer ua
+                ON ua.quiz_id = q.id
+                AND ua.user_id IN (
+                  SELECT id FROM users WHERE id = $1 OR linked_user = $1
+                )
+              WHERE
+                (q.belongs_to = 0 OR q.belongs_to = $1 OR q.belongs_to = (
+                  SELECT linked_user FROM users WHERE id = $1
+                ))
+                AND ua.id IS NULL
+              ORDER BY q.created_at DESC
+            ) AS q_item;
+        )";
+
+        std::cout << "executing query: " << query << " with user id: " << user_id << std::endl;
+        pqxx::result result = txn.exec_params(query, user_id);
+        txn.commit();
+        std::string user_answer_json = result[0][0].as<std::string>();
+
+        return user_answer_json;
+    } catch (const pqxx::sql_error &e) {
+        std::cerr << "sql error: " << e.what() << std::endl;
+        std::cerr << "failed query: " << e.query() << std::endl;
+        throw;
+    } catch (const std::exception &e) {
+        std::cerr << "error: failed to process db request: " << e.what() << std::endl;
+        throw;
+    }
+}
+
