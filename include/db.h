@@ -63,5 +63,6 @@ void answer_quiz(const int64_t quiz_id, const int64_t user_id, const int64_t ans
 std::string get_user_quiz_answer(const int64_t quiz_id, const int64_t user_id);
 std::string get_unanswered_quizes(const int64_t user_id);
 std::string get_answered_quizes(const int64_t user_id);
+std::string get_unanswered_quizes(const int64_t user_id);
 #endif
 

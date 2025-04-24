@@ -2,8 +2,8 @@
 
 #ADDRESS=129.158.234.85:8080
 ADDRESS=localhost:8080
-LOGIN=testuser
-PASSWORD=testpassword
+LOGIN=testuser1_6
+PASSWORD=secretsecret1
 
 # Create user
 printf "Create user\n"
@@ -45,3 +45,9 @@ printf "\n\n"
 printf "Get unanswered quizzes\n"
 curl -X POST http://$ADDRESS/get-unanswered-quizes -d "token=$JWT"
 printf "\n\n"
+
+#Get unanswered quizzes
+printf "Get unanswered quizzes for pair\n"
+curl -X POST http://$ADDRESS/get-unanswered-quizzes-for-pair -d "token=$JWT"
+printf "\n\n"
+
