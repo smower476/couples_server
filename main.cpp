@@ -22,7 +22,7 @@ int main() {
     // signal(SIGINT, signal_callback_handler); // Ctrl + C handler
     
     
-    webserver ws = create_webserver(PORT);
+    webserver ws = create_webserver(PORT).start_method(http::http_utils::INTERNAL_SELECT).max_threads(4);
 //    validate_resource validate_res;
     add_user_resource add_user_res;
     login_resource login_res;
