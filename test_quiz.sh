@@ -1,7 +1,7 @@
 #!/bin/bash
 
-#ADDRESS=129.158.234.85:8080
-ADDRESS=localhost:8080
+ADDRESS=129.158.234.85:8080
+#ADDRESS=localhost:8080
 LOGIN=testuser
 PASSWORD=testpassword
 

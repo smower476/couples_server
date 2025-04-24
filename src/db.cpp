@@ -407,7 +407,6 @@ std::string get_unanswered_quizes(const int64_t user_id){
 
         std::cout << "executing query: " << query << " with user id: " << user_id << " quiz_id " << std::endl;
         pqxx::result result = txn.exec_params(query, user_id);
-        if (result.empty()) throw std::runtime_error("No valid quiz found, or user doesn't have permission to answer.");
         txn.commit();
         std::string user_answer_json = result[0][0].as<std::string>();
 
@@ -424,7 +423,6 @@ std::string get_unanswered_quizes(const int64_t user_id){
 
 std::string get_answered_quizes(const int64_t user_id){
     try {
-        
         pqxx::work txn(conn);
         std::string query = R"( 
         SELECT COALESCE(
@@ -453,7 +451,6 @@ std::string get_answered_quizes(const int64_t user_id){
 
         std::cout << "executing query: " << query << " with user id: " << user_id << " quiz_id " << std::endl;
         pqxx::result result = txn.exec_params(query, user_id);
-        if (result.empty()) throw std::runtime_error("No valid quiz found, or user doesn't have permission to answer.");
         txn.commit();
         std::string user_answer_json = result[0][0].as<std::string>();
 
