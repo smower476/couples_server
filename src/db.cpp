@@ -469,9 +469,13 @@ std::string get_answered_quizes(const int64_t user_id){
                 'self_answered_at', ua.self_answered_at,
                 'partner_answer', ua.partner_answer,
                 'partner_answered_at', ua.partner_answered_at
-            )), '[]') AS quizzes
-        FROM user_answers ua
-        ORDER BY ua.created_at DESC;
+            )
+        ), '[]') AS quizzes
+        FROM (
+            SELECT *
+            FROM user_answers
+            ORDER BY created_at DESC
+        ) ua;
         )";
 
         std::cout << "executing query: " << query << " with user id: " << user_id << std::endl;
