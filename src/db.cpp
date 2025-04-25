@@ -145,21 +145,33 @@ std::int64_t get_user_id(const std::string& jwt){
     }
 }
 int64_t generate_link_code(const int64_t id){
-    // INSERT INTO token (user_id, ) VALUES (123456, 789012);
     try {
         std::srand(std::time(NULL));
-        int link_code =100000 + std::rand() % 899999;
+        int link_code = 100000 + std::rand() % 899999;
         pqxx::work txn(conn);
-        // INSERT INTO token (user_id, link_token) VALUES (1, 123456) ON CONFLICT (user_id) DO UPDATE SET link_token = 3;
-        // std::string query = "INSERT INTO token (user_id, link_token) VALUES ($1, $2)";
-        std::string query = "INSERT INTO token (user_id, link_token, expired_at) VALUES ($1, $2, NOW() + INTERVAL '10 minutes') ON CONFLICT (user_id) DO UPDATE SET link_token=$2, expired_at=(NOW() + INTERVAL '10 minutes')";
-        
-        std::cout << "executing query: " << query << " with id: " << id << " link code: " << link_code << std::endl;
-        
-        txn.exec_params(query, id, link_code);
+
+        // Check if user is already linked and, if not, insert/update the token
+        std::string check_and_insert_query = R"(
+            WITH user_check AS (
+                SELECT linked_user FROM users WHERE id = $1
+            )
+            INSERT INTO token (user_id, link_token, expired_at)
+            SELECT $1, $2, NOW() + INTERVAL '10 minutes'
+            FROM user_check
+            WHERE user_check.linked_user IS NULL OR user_check.linked_user = 0
+            ON CONFLICT (user_id) DO UPDATE SET link_token = $2, expired_at = (NOW() + INTERVAL '10 minutes')
+            RETURNING (SELECT linked_user FROM users WHERE id = $1) AS linked_user
+        )";
+
+        pqxx::result res = txn.exec_params(check_and_insert_query, id, link_code);
+
+        if (res.empty() || (!res[0][0].is_null() && res[0][0].as<int64_t>() != 0)) {
+            std::cerr << "User has already been linked." << std::endl;
+            return 409; // HTTP 409 Conflict
+        }
 
         txn.commit();
-        
+
         std::cout << "link code genereted successfully." << std::endl;
         return link_code; 
     } catch (const pqxx::sql_error &e) {
