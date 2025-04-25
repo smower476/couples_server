@@ -434,35 +434,44 @@ std::string get_answered_quizes(const int64_t user_id){
     try {
         pqxx::work txn(conn);
         std::string query = R"( 
-        SELECT COALESCE(json_agg(q_item), '[]') AS quizzes
-FROM (
-  SELECT
-    q.id,
-    q.quiz_name,
-    q.created_at,
-    q.belongs_to
-  FROM quiz q
-  WHERE
-    q.belongs_to IN (
-      0,
-      $1,
-      (SELECT linked_user FROM users WHERE id = $1)
-    )
-    AND EXISTS (
-      SELECT 1
-      FROM quiz_user_answer ua1
-      WHERE ua1.quiz_id = q.id AND ua1.user_id = $1
-    )
-    AND EXISTS (
-      SELECT 1
-      FROM quiz_user_answer ua2
-      WHERE ua2.quiz_id = q.id AND ua2.user_id = (
-        SELECT linked_user FROM users WHERE id = $1
-      )
-    )
-  ORDER BY q.created_at DESC
-) AS q_item;
-    
+        WITH user_pair AS (
+            SELECT 
+                $1 AS user_id,
+                linked_user AS partner_id
+            FROM users
+            WHERE id = $1
+        ),
+        user_answers AS (
+            SELECT
+                q.id,
+                q.quiz_name,
+                q.created_at,
+                q.belongs_to,
+                ua_self.quiz_answer AS self_answer,
+                ua_self.answered_at AS self_answered_at,
+                ua_partner.quiz_answer AS partner_answer,
+                ua_partner.answered_at AS partner_answered_at
+            FROM quiz q
+            JOIN user_pair up ON TRUE
+            JOIN quiz_user_answer ua_self 
+                ON ua_self.quiz_id = q.id AND ua_self.user_id = up.user_id
+            LEFT JOIN quiz_user_answer ua_partner
+                ON ua_partner.quiz_id = q.id AND ua_partner.user_id = up.partner_id
+            WHERE (q.belongs_to = 0 OR q.belongs_to = up.user_id OR q.belongs_to = up.partner_id)
+        )
+        SELECT COALESCE(json_agg(
+            json_build_object(
+                'id', ua.id,
+                'quiz_name', ua.quiz_name,
+                'created_at', ua.created_at,
+                'belongs_to', ua.belongs_to,
+                'self_answer', ua.self_answer,
+                'self_answered_at', ua.self_answered_at,
+                'partner_answer', ua.partner_answer,
+                'partner_answered_at', ua.partner_answered_at
+            )), '[]') AS quizzes
+        FROM user_answers ua
+        ORDER BY ua.created_at DESC;
         )";
 
         std::cout << "executing query: " << query << " with user id: " << user_id << std::endl;
