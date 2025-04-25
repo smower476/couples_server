@@ -485,26 +485,44 @@ std::string get_unanswered_quizzes_for_pair(const int64_t user_id){
     try {
         pqxx::work txn(conn);
         std::string query = R"( 
-       SELECT COALESCE(json_agg(q_item), '[]') AS quizzes
-      FROM (
-        SELECT
-          q.id,
-          q.quiz_name,
-          q.created_at,
-          q.belongs_to
-        FROM quiz q
-        LEFT JOIN quiz_user_answer ua
-          ON ua.quiz_id = q.id
-          AND ua.user_id IN (
-            SELECT id FROM users WHERE id = $1 OR linked_user = $1
-          )
-        WHERE
-          (q.belongs_to = 0 OR q.belongs_to = $1 OR q.belongs_to = (
-            SELECT linked_user FROM users WHERE id = $1
-          ))
-          AND ua.id IS NULL
-        ORDER BY q.created_at DESC
-      ) AS q_item
+            WITH user_pair AS (
+            SELECT 
+                $1 AS user_id,
+                linked_user AS partner_id
+            FROM users
+            WHERE id = $1
+        )
+        SELECT COALESCE(json_agg(q_item), '[]') AS quizzes
+        FROM (
+            SELECT
+                q.id,
+                q.quiz_name,
+                q.created_at,
+                q.belongs_to
+            FROM quiz q
+            JOIN user_pair up ON TRUE
+            WHERE (
+                q.belongs_to = 0 OR 
+                q.belongs_to = up.user_id OR 
+                q.belongs_to = up.partner_id
+            )
+            AND NOT EXISTS (
+                SELECT 1
+                FROM quiz_user_answer ua1
+                JOIN quiz_user_answer ua2 ON ua1.quiz_id = ua2.quiz_id
+                WHERE ua1.quiz_id = q.id 
+                  AND ua1.user_id = up.user_id
+                  AND ua2.user_id = up.partner_id
+            )
+            AND NOT EXISTS (
+                SELECT 1
+                FROM quiz_user_answer ua
+                WHERE ua.quiz_id = q.id
+                  AND ua.user_id IN (up.user_id, up.partner_id)
+                  AND ua.answered_at < NOW() - INTERVAL '1 day'
+            )
+            ORDER BY q.created_at DESC
+        ) AS q_item   
         )";
 
         std::cout << "executing query: " << query << " with user id: " << user_id << std::endl;
