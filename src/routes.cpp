@@ -44,7 +44,10 @@ std::shared_ptr<http_response> get_link_code_resource::render(const http_request
     int64_t id = get_user_id(username);
     if (id == -2) return std::make_shared<string_response>("Invalid JWT token", 401, "text/plain");
     int code = generate_link_code(id);  
-    if (code == 409) return std::make_shared<string_response>("User already linked", 409, "text/plain");
+    if (code == 409) {
+        std::cerr << "User already linked" << std::endl;
+        return std::make_shared<string_response>("User already linked", 409, "text/plain");
+    }
     if (100000 > code || code > 999999 || id == -1) return std::make_shared<string_response>("Internal Server Error", 500, "text/plain");
     return std::make_shared<string_response>(std::to_string(code), 200, "text/plain");
 }
