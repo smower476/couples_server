@@ -2,8 +2,8 @@
 
 #ADDRESS=129.158.234.85:8080
 ADDRESS=localhost:8080
-LOGIN=testuser1_6
-PASSWORD=secretsecret1
+LOGIN=bigbon__5
+PASSWORD=King22401825
 
 # Create user
 printf "Create user\n"

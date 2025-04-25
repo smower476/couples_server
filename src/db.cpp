@@ -5,6 +5,7 @@
 #include <iostream>
 #include <sodium.h>  
 #include <cstdlib>
+#include <string>
 
 
 const char * pqxx_connection = std::getenv("PQXX_CONNECTION");
@@ -55,6 +56,14 @@ std::string hash_password(const std::string& password) {
 bool verify_password(const std::string& password, const std::string& hashed_password) {
     return crypto_pwhash_str_verify(hashed_password.c_str(), password.c_str(), password.length()) == 0;
 }
+
+void set_username(const int64_t id, std::string username);
+
+void set_user_status(const int64_t id, std::string status);
+void set_mood_scale(const int64_t id, int mood_scale);
+
+
+void get_user_info();
 
 int add_user(const std::string& username, const std::string& password) {
     try {
@@ -425,28 +434,35 @@ std::string get_answered_quizes(const int64_t user_id){
     try {
         pqxx::work txn(conn);
         std::string query = R"( 
-        SELECT COALESCE(
-            json_agg(
-              json_build_object(
-                'quiz_id',    q.id,
-                'quiz_name',  q.quiz_name,
-                'created_at', to_char(q.created_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"'),
-                'belongs_to', q.belongs_to,
-                'user_answer', json_build_object(
-                   'answer_id',   qu.id,
-                   'quiz_answer', qu.quiz_answer,
-                   'answered_at', to_char(qu.answered_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"')
-                )
-              )
-            )
-          , '[]'
-          ) AS quizzes
-        FROM quiz q
-          JOIN quiz_user_answer qu
-            ON qu.quiz_id = q.id
-           AND qu.user_id = $1
-        WHERE q.belongs_to = 0
-           OR q.belongs_to = $1;
+        SELECT COALESCE(json_agg(q_item), '[]') AS quizzes
+FROM (
+  SELECT
+    q.id,
+    q.quiz_name,
+    q.created_at,
+    q.belongs_to
+  FROM quiz q
+  WHERE
+    q.belongs_to IN (
+      0,
+      $1,
+      (SELECT linked_user FROM users WHERE id = $1)
+    )
+    AND EXISTS (
+      SELECT 1
+      FROM quiz_user_answer ua1
+      WHERE ua1.quiz_id = q.id AND ua1.user_id = $1
+    )
+    AND EXISTS (
+      SELECT 1
+      FROM quiz_user_answer ua2
+      WHERE ua2.quiz_id = q.id AND ua2.user_id = (
+        SELECT linked_user FROM users WHERE id = $1
+      )
+    )
+  ORDER BY q.created_at DESC
+) AS q_item;
+    
         )";
 
         std::cout << "executing query: " << query << " with user id: " << user_id << std::endl;
