@@ -2,12 +2,22 @@
 #define DB_H
 #include <cstdint>
 #include <pqxx/pqxx>
+#include "db_pool.h"
+
+extern std::shared_ptr<ConnectionPool> conn_pool;
+
 
 namespace tables{
-    inline std::string create_users_table = R"(
-    CREATE TYPE IF NOT EXISTS mood AS ENUM ('happy', 'sad', 'angry', 'neutral');
+    inline std::string create_mood_enum = R"(
+    DO $$
+    BEGIN
+        IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'mood') THEN
+            CREATE TYPE mood AS ENUM ('happy', 'sad', 'angry', 'neutral');
+        END IF;
+    END$$;
+    )";
 
-    CREATE TABLE IF NOT EXISTS users (
+    inline std::string create_users_table = R"(CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY, 
         username VARCHAR(50) UNIQUE NOT NULL, 
         password VARCHAR(255) NOT NULL,

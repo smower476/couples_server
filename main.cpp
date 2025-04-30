@@ -1,28 +1,21 @@
 #include <iostream>
 #include "include/routes.h"
 #include "include/db.h"
+#include "include/db_pool.h"
 #include <httpserver.hpp>
 #include <pqxx/pqxx>
-//#include <signal.h>
 
 #define PORT 8080
 
 using namespace httpserver;
 
-/*
-void signal_callback_handler(int signum) {
-   // db_close
-    std::cout << "\n" << "DB Closed " << "\n";
-    exit(signum);
-}
-*/
-
 int main() {
     create_tables();
-    // signal(SIGINT, signal_callback_handler); // Ctrl + C handler
-    
-    
-    webserver ws = create_webserver(PORT);
+    conn_pool = std::make_shared<ConnectionPool>("dbname=couples_db user=postgres host=localhost port=5432", 100);
+    webserver ws = create_webserver(PORT)
+        .start_method(httpserver::http::http_utils::INTERNAL_SELECT)
+        .max_connections(1000); 
+
 //    validate_resource validate_res;
     add_user_resource add_user_res;
     login_resource login_res;
@@ -65,5 +58,3 @@ int main() {
 
     return 0;
 }
-
-

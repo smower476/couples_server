@@ -1,5 +1,6 @@
 #include "../include/db.h"
 #include "../include/token.h"
+#include "../include/db_pool.h"
 #include <cstdint>
 #include <pqxx/pqxx>
 #include <iostream>
@@ -8,9 +9,11 @@
 #include <string>
 
 
-const char * pqxx_connection = std::getenv("PQXX_CONNECTION");
-pqxx::connection conn(pqxx_connection);
-//pqxx::connection conn("dbname=couples_db user=postgres host=localhost port=5432");
+//const char * pqxx_connection = std::getenv("PQXX_CONNECTION");
+//pqxx::connection conn(pqxx_connection);
+pqxx::connection conn("dbname=couples_db user=postgres host=localhost port=5432");
+
+std::shared_ptr<ConnectionPool> conn_pool;
 
 int create_table(const std::string query) {
     try {
@@ -30,6 +33,7 @@ int create_table(const std::string query) {
 }
 
 void create_tables() {
+    create_table(tables::create_mood_enum);
     create_table(tables::create_users_table);
     create_table(tables::create_token_table);
     create_table(tables::create_quiz_table);
@@ -56,29 +60,6 @@ std::string hash_password(const std::string& password) {
 bool verify_password(const std::string& password, const std::string& hashed_password) {
     return crypto_pwhash_str_verify(hashed_password.c_str(), password.c_str(), password.length()) == 0;
 }
-/*
-void set_username(const int64_t user_id, const std::sting username){
-    try {
-        pqxx::work txn(conn);
-        std::string query = R"(
-
-        )";
-
-        std::cout << "executing query: " << query << " with user id: " << user_id << std::endl;
-        pqxx::result result = txn.exec_params(query, user_id);
-        txn.commit();
-        std::string user_answer_json = result[0][0].as<std::string>();
-
-    } catch (const pqxx::sql_error &e) {
-        std::cerr << "sql error: " << e.what() << std::endl;
-        std::cerr << "failed query: " << e.query() << std::endl;
-        throw;
-    } catch (const std::exception &e) {
-        std::cerr << "error: failed to process db request: " << e.what() << std::endl;
-        throw;
-    }
-}
-*/
 void set_mood_status(const int64_t user_id, std::string status){
     try {
         pqxx::work txn(conn);
@@ -269,10 +250,11 @@ std::int64_t get_user_id(const std::string& jwt){
 
 int64_t generate_link_code(const int64_t id){
     try {
+        auto conn1 = conn_pool->acquire();
         std::srand(std::time(NULL));
         int link_code = 100000 + std::rand() % 899999;
 
-        pqxx::work txn(conn);
+        pqxx::work txn(*conn1);
 
         std::string query = R"(
             WITH user_check AS (
@@ -297,8 +279,9 @@ int64_t generate_link_code(const int64_t id){
         }
 
         std::cout << "link code generated successfully." << std::endl;
+        conn_pool->release(std::move(conn1));
         return link_code;
-
+        
     } catch (const pqxx::sql_error &e) {
         std::cerr << "sql error: " << e.what() << std::endl;
         std::cerr << "failed query: " << e.query() << std::endl;
