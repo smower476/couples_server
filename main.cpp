@@ -11,18 +11,20 @@ using namespace httpserver;
 
 int main() {
     //const char* pqxx_connection = "dbname=couples_db user=postgres host=localhost port=5432";
+    // const char* pqxx_connection = std::getenv("PQXX_TEST_CONNECTION"); 
     const char* pqxx_connection = std::getenv("PQXX_CONNECTION"); 
+
     if (!pqxx_connection) {
         std::cerr << "Environment variable PQXX_CONNECTION not set" << std::endl;
         return EXIT_FAILURE;
     }
 
-    conn_pool = std::make_shared<ConnectionPool>(pqxx_connection, 10);
+    conn_pool = std::make_shared<ConnectionPool>(pqxx_connection, 4 /* amount of connections */);
 
     create_tables();
     webserver ws = create_webserver(PORT)
         .start_method(httpserver::http::http_utils::INTERNAL_SELECT)
-        .max_connections(1000); 
+        .max_connections(100); 
 
 //    validate_resource validate_res;
     add_user_resource add_user_res;

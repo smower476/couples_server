@@ -20,4 +20,24 @@ private:
     std::condition_variable cond;
 };
 
+class ConnectionHandle {
+public:
+    ConnectionHandle(ConnectionPool &pool)
+        : pool(pool), conn(pool.acquire()) {}
+
+    pqxx::connection* get() const {
+        return conn.get();
+    }
+
+    ~ConnectionHandle() {
+        if (conn) {
+            pool.release(std::move(conn));
+        }
+    }
+
+private:
+    ConnectionPool &pool;
+    std::unique_ptr<pqxx::connection> conn;
+};
+
 #endif

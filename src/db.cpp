@@ -17,12 +17,13 @@ std::shared_ptr<ConnectionPool> conn_pool;
 
 int create_table(const std::string query) {
     try {
-        auto conn = conn_pool->acquire();
-        pqxx::work txn(*conn);
+        ConnectionHandle handle(*conn_pool);
+        pqxx::work txn(*handle.get());
+        
 
         txn.exec(query);
         txn.commit();
-        conn_pool->release(std::move(conn));
+        
 
         return 1;
     } catch (const pqxx::sql_error &e) {
@@ -65,8 +66,9 @@ bool verify_password(const std::string& password, const std::string& hashed_pass
 }
 void set_mood_status(const int64_t user_id, std::string status){
     try {
-        auto conn = conn_pool->acquire();
-        pqxx::work txn(*conn);
+        ConnectionHandle handle(*conn_pool);
+        pqxx::work txn(*handle.get());       
+        
         std::string query = R"(
             UPDATE users SET mood_status = $2 WHERE id = $1
         )";
@@ -74,7 +76,7 @@ void set_mood_status(const int64_t user_id, std::string status){
         std::cout << "executing query: " << query << " with user id: " << user_id << std::endl;
         txn.exec_params(query, user_id, status);
         txn.commit();
-        conn_pool->release(std::move(conn));
+        
 
     } catch (const pqxx::sql_error &e) {
         std::cerr << "sql error: " << e.what() << std::endl;
@@ -88,8 +90,9 @@ void set_mood_status(const int64_t user_id, std::string status){
 
 void set_mood_scale(const int64_t user_id, int mood_scale){
     try {
-        auto conn = conn_pool->acquire();
-        pqxx::work txn(*conn);
+          ConnectionHandle handle(*conn_pool);
+        pqxx::work txn(*handle.get());      
+        
         std::string query = R"( 
         UPDATE users
         SET mood_scale = $2
@@ -99,7 +102,7 @@ void set_mood_scale(const int64_t user_id, int mood_scale){
         std::cout << "executing query: " << query << " with user id: " << user_id << " mood scale: " << mood_scale <<std::endl;
         txn.exec_params(query, user_id, mood_scale);
         txn.commit();
-        conn_pool->release(std::move(conn));
+        
 
     } catch (const pqxx::sql_error &e) {
         std::cerr << "sql error: " << e.what() << std::endl;
@@ -113,8 +116,9 @@ void set_mood_scale(const int64_t user_id, int mood_scale){
 
 std::string get_info(const int64_t user_id){
     try {
-        auto conn = conn_pool->acquire();
-        pqxx::work txn(*conn);
+        ConnectionHandle handle(*conn_pool);
+        pqxx::work txn(*handle.get());     
+        
         std::string query = R"(       
         SELECT json_build_object(
             'id', id,
@@ -130,7 +134,7 @@ std::string get_info(const int64_t user_id){
         std::cout << "executing query: " << query << " with user id: " << user_id << " mood scale: " <<std::endl;
         pqxx::result result = txn.exec_params(query, user_id);
         txn.commit();
-        conn_pool->release(std::move(conn));
+        
 
         if (result.empty()) {
             return "{\"error\": \"No linked user found\"}";
@@ -149,8 +153,9 @@ std::string get_info(const int64_t user_id){
 
 std::string get_partner_info(const int64_t user_id){
     try {
-        auto conn = conn_pool->acquire();
-        pqxx::work txn(*conn);
+        ConnectionHandle handle(*conn_pool);
+        pqxx::work txn(*handle.get());       
+        
         std::string query = R"(SELECT json_build_object(
             'id', id,
             'username', username,
@@ -164,7 +169,7 @@ std::string get_partner_info(const int64_t user_id){
 
         std::cout << "executing query: " << query << " with user id: " << user_id << " mood scale: " <<std::endl;
         pqxx::result result = txn.exec_params(query, user_id);
-        conn_pool->release(std::move(conn));
+        
         
         txn.commit();
 
@@ -181,16 +186,18 @@ std::string get_partner_info(const int64_t user_id){
 
 int add_user(const std::string& username, const std::string& password) {
     try {
+        ConnectionHandle handle(*conn_pool);
+        pqxx::work txn(*handle.get());
         std::string hashed_password = hash_password(password);
-        auto conn = conn_pool->acquire();
-        pqxx::work txn(*conn);
+        
+        
         std::string query = "insert into users (username, password) values ($1, $2)";
         
         std::cout << "executing query: " << query << " with username: " << username << std::endl;
         
         txn.exec_params(query, username, hashed_password);
         txn.commit();
-        conn_pool->release(std::move(conn));
+        
         
         std::cout << "user added successfully." << std::endl;
         return 0; 
@@ -213,13 +220,14 @@ int add_user(const std::string& username, const std::string& password) {
 
 bool validate_user(const std::string& username, const std::string& password) {
     try {
-        auto conn = conn_pool->acquire();
-        pqxx::work txn(*conn);
+         ConnectionHandle handle(*conn_pool);
+        pqxx::work txn(*handle.get());       
+        
 
         const std::string query = "SELECT password FROM users WHERE username = $1;";
         pqxx::result result = txn.exec_params(query, username);
         txn.commit();
-        conn_pool->release(std::move(conn));
+        
 
         if (result.empty()) {
             std::cerr << "Error: Username not found." << std::endl;
@@ -243,9 +251,10 @@ bool validate_user(const std::string& username, const std::string& password) {
 std::int64_t get_user_id(const std::string& jwt){
     try {
         std::string username = decode_jwt(jwt);
-        auto conn = conn_pool->acquire();
+         ConnectionHandle handle(*conn_pool);
+        pqxx::work txn(*handle.get());       
 
-        pqxx::work txn(*conn);
+        
         std::string query = "SELECT id FROM users WHERE username = $1;";
         
         std::cout << "executing query: " << query << " with username: " << username << std::endl;
@@ -254,7 +263,7 @@ std::int64_t get_user_id(const std::string& jwt){
         pqxx::row result = txn.exec_params1(query, username);
         int64_t id = result[0].as<std::int64_t>();   
         txn.commit();
-        conn_pool->release(std::move(conn));
+        
 
         std::cout<<"\n USER ID " << id << "\n";
         return id; 
@@ -270,11 +279,13 @@ std::int64_t get_user_id(const std::string& jwt){
 
 int64_t generate_link_code(const int64_t id){
     try {
+        ConnectionHandle handle(*conn_pool);
+        pqxx::work txn(*handle.get());
         std::srand(std::time(NULL));
         int link_code = 100000 + std::rand() % 899999;
 
-        auto conn = conn_pool->acquire();
-        pqxx::work txn(*conn);
+        
+        
 
         std::string query = R"(
             WITH user_check AS (
@@ -292,7 +303,7 @@ int64_t generate_link_code(const int64_t id){
 
         pqxx::result result = txn.exec_params(query, id, link_code);
         txn.commit();
-        conn_pool->release(std::move(conn));
+        
         
         if (result.empty()) {
             std::cerr << "error: user does not exist or is already linked." << std::endl;
@@ -314,11 +325,13 @@ int64_t generate_link_code(const int64_t id){
 
 int link_user(const int link_token, const std::string &jwt){
     try {
+        ConnectionHandle handle(*conn_pool);
+        pqxx::work txn(*handle.get());
         int64_t id = get_user_id(jwt);
         if (id < 0) return id;
 
-        auto conn = conn_pool->acquire();
-        pqxx::work txn(*conn);
+        
+        
         std::string query =  R"(
             WITH token_owner AS (
                 SELECT u.id 
@@ -343,7 +356,7 @@ int link_user(const int link_token, const std::string &jwt){
         
         auto result = txn.exec_params(query, link_token, id);
         txn.commit();
-        conn_pool->release(std::move(conn));
+        
 
         if (result.empty()) {
             return -3;  
@@ -363,9 +376,10 @@ int link_user(const int link_token, const std::string &jwt){
 
 void unlink_users(const int64_t user_id){
     try {
-        auto conn = conn_pool->acquire();
+        ConnectionHandle handle(*conn_pool);
+        pqxx::work txn(*handle.get());        
 
-        pqxx::work txn(*conn);
+        
         std::string query = R"( 
         UPDATE users SET linked_user = NULL WHERE id = $1 OR id = (SELECT linked_user FROM users WHERE id = $1);
         )";
@@ -373,7 +387,7 @@ void unlink_users(const int64_t user_id){
         std::cout << "executing query: " << query << " with user id: " << user_id << std::endl;
         txn.exec_params(query, user_id);
         txn.commit();
-        conn_pool->release(std::move(conn));
+        
 
     } catch (const pqxx::sql_error &e) {
         std::cerr << "sql error: " << e.what() << std::endl;
@@ -388,9 +402,10 @@ void unlink_users(const int64_t user_id){
 
 std::string get_daily_quiz(const int64_t id){
     try {
-        auto conn = conn_pool->acquire();
+        ConnectionHandle handle(*conn_pool);
+        pqxx::work txn(*handle.get());        
 
-        pqxx::work txn(*conn);
+        
         std::string query = R"(SELECT json_agg(q) FROM (
             SELECT * FROM quiz 
             WHERE belongs_to = 0 OR belongs_to = $1
@@ -404,7 +419,7 @@ std::string get_daily_quiz(const int64_t id){
 std::string daily_quiz_json = result[0][0].as<std::string>();
 
         txn.commit();
-        conn_pool->release(std::move(conn));
+        
 
         std::cout<<"\n daily quiz json " << daily_quiz_json << "\n";
     
@@ -421,11 +436,13 @@ std::string daily_quiz_json = result[0][0].as<std::string>();
 
 std::string get_quiz_content(const int64_t quiz_id, const int64_t user_id){
     try {
+        ConnectionHandle handle(*conn_pool);
+        pqxx::work txn(*handle.get());        
         // quiz_id , user_id (jwt)
         if (user_id < 0) throw std::runtime_error("Invalid JWT or user not found");;
-        auto conn = conn_pool->acquire();
         
-        pqxx::work txn(*conn);
+        
+        
         std::string query = R"( 
             SELECT json_build_object(
             'quiz_content', json_agg(
@@ -456,7 +473,7 @@ std::string get_quiz_content(const int64_t quiz_id, const int64_t user_id){
         std::string daily_quiz_json = result[0][0].as<std::string>();
 
         txn.commit();
-        conn_pool->release(std::move(conn));
+        
 
         std::cout<<"\n quiz content " << daily_quiz_json << "\n";
     
@@ -473,9 +490,10 @@ std::string get_quiz_content(const int64_t quiz_id, const int64_t user_id){
 
 void answer_quiz(const int64_t quiz_id, const int64_t user_id, const int64_t answer){
     try {
-        auto conn = conn_pool->acquire();
+        ConnectionHandle handle(*conn_pool);
+        pqxx::work txn(*handle.get());        
         
-        pqxx::work txn(*conn);
+        
         std::string query = R"( 
         WITH valid_quiz AS (
             SELECT id FROM quiz WHERE id = $1 AND (belongs_to = $2 OR belongs_to = 0)
@@ -491,7 +509,7 @@ void answer_quiz(const int64_t quiz_id, const int64_t user_id, const int64_t ans
         pqxx::result res = txn.exec_params(query, quiz_id, user_id, answer);
         if (res.empty()) throw std::runtime_error("No valid quiz found, or user doesn't have permission to answer.");
         txn.commit();
-        conn_pool->release(std::move(conn));
+        
     
     } catch (const pqxx::sql_error &e) {
         std::cerr << "sql error: " << e.what() << std::endl;
@@ -505,9 +523,10 @@ void answer_quiz(const int64_t quiz_id, const int64_t user_id, const int64_t ans
 
 std::string get_user_quiz_answer(const int64_t quiz_id, const int64_t user_id){
     try {
-        auto conn = conn_pool->acquire();
+        ConnectionHandle handle(*conn_pool);
+        pqxx::work txn(*handle.get());        
         
-        pqxx::work txn(*conn);
+        
         std::string query = R"( 
         WITH user_info AS (
             SELECT id AS self_id, linked_user
@@ -556,7 +575,7 @@ std::string get_user_quiz_answer(const int64_t quiz_id, const int64_t user_id){
         pqxx::result result = txn.exec_params(query, user_id, quiz_id);
         if (result.empty()) throw std::runtime_error("No valid quiz found, or user doesn't have permission to answer.");
         txn.commit();
-        conn_pool->release(std::move(conn));
+        
 
         std::string user_answer_json = result[0][0].as<std::string>();
 
@@ -573,9 +592,10 @@ std::string get_user_quiz_answer(const int64_t quiz_id, const int64_t user_id){
 
 std::string get_unanswered_quizes(const int64_t user_id){
     try {
-        auto conn = conn_pool->acquire();
+        ConnectionHandle handle(*conn_pool);
+        pqxx::work txn(*handle.get());        
         
-        pqxx::work txn(*conn);
+        
         std::string query = R"( 
         SELECT COALESCE(json_agg(q_item), '[]') AS quizzes
           FROM (
@@ -597,7 +617,7 @@ std::string get_unanswered_quizes(const int64_t user_id){
         std::cout << "executing query: " << query << " with user id: " << user_id << std::endl;
         pqxx::result result = txn.exec_params(query, user_id);
         txn.commit();
-        conn_pool->release(std::move(conn));
+        
 
         std::string user_answer_json = result[0][0].as<std::string>();
 
@@ -614,9 +634,10 @@ std::string get_unanswered_quizes(const int64_t user_id){
 
 std::string get_answered_quizes(const int64_t user_id){
     try {
-        auto conn = conn_pool->acquire();
-
-        pqxx::work txn(*conn);
+        
+        ConnectionHandle handle(*conn_pool);
+        pqxx::work txn(*handle.get());
+        
         std::string query = R"( 
 WITH user_pair AS (
             SELECT 
@@ -664,8 +685,9 @@ WITH user_pair AS (
 
         std::cout << "executing query: " << query << " with user id: " << user_id << std::endl;
         pqxx::result result = txn.exec_params(query, user_id);
+        
+
         txn.commit();
-        conn_pool->release(std::move(conn));
 
         std::string user_answer_json = result[0][0].as<std::string>();
 
@@ -682,9 +704,10 @@ WITH user_pair AS (
 
 std::string get_unanswered_quizzes_for_pair(const int64_t user_id){
     try {
-        auto conn = conn_pool->acquire();
+        ConnectionHandle handle(*conn_pool);
+        pqxx::work txn(*handle.get());        
 
-        pqxx::work txn(*conn);
+        
         std::string query = R"( 
             WITH user_pair AS (
             SELECT 
@@ -729,7 +752,7 @@ std::string get_unanswered_quizzes_for_pair(const int64_t user_id){
         std::cout << "executing query: " << query << " with user id: " << user_id << std::endl;
         pqxx::result result = txn.exec_params(query, user_id);
         txn.commit();
-        conn_pool->release(std::move(conn));
+        
 
         std::string user_answer_json = result[0][0].as<std::string>();
 
