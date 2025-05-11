@@ -55,6 +55,24 @@ namespace tables{
         content VARCHAR(50) NOT NULL,
         question_id INT NOT NULL REFERENCES quiz_content(id) ON DELETE CASCADE
         ))";
+
+     inline std::string create_daily_question_table = R"(CREATE TABLE IF NOT EXISTS daily_question (
+        id SERIAL PRIMARY KEY,
+        question_name VARCHAR(255) NOT NULL,
+        question_content TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT NOW() 
+        ))";
+
+     inline std::string create_daily_question_answer_table = R"(CREATE TABLE IF NOT EXISTS daily_question_answer (
+        id SERIAL PRIMARY KEY,
+        answer TEXT NOT NULL,
+        user_id INT NOT NULL,
+        answered_at TIMESTAMP DEFAULT NOW(), 
+        daily_question_id INT NOT NULL,
+        FOREIGN KEY (user_id) REFERENCES users(id), 
+        FOREIGN KEY (daily_question_id) REFERENCES daily_question(id) 
+        ))";
+
 }
 extern pqxx::connection conn;
 int create_table(const std::string content);
@@ -77,5 +95,6 @@ std::string get_user_quiz_answer(const int64_t quiz_id, const int64_t user_id);
 std::string get_unanswered_quizes(const int64_t user_id);
 std::string get_answered_quizes(const int64_t user_id);
 std::string get_unanswered_quizes(const int64_t user_id);
+void answer_daily_question(const int64_t user_id, const int64_t daily_question_id, const std::string& answer);
 #endif
 

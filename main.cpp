@@ -11,8 +11,8 @@ using namespace httpserver;
 
 int main() {
     //const char* pqxx_connection = "dbname=couples_db user=postgres host=localhost port=5432";
-    // const char* pqxx_connection = std::getenv("PQXX_TEST_CONNECTION"); 
-    const char* pqxx_connection = std::getenv("PQXX_CONNECTION"); 
+    const char* pqxx_connection = std::getenv("PQXX_TEST_CONNECTION"); 
+    // const char* pqxx_connection = std::getenv("PQXX_CONNECTION"); 
 
     if (!pqxx_connection) {
         std::cerr << "Environment variable PQXX_CONNECTION not set" << std::endl;
@@ -43,6 +43,8 @@ int main() {
     get_user_info_resource get_user_info_res;
     get_partner_info_resource get_partner_info_res;
     
+    answer_daily_question_resource answer_daily_question_res; 
+
     ws.register_resource("/login", &login_res); // Login endpoint
 //    ws.register_resource("/validate-token", &validate_res);  // Token validation endpoint
     ws.register_resource("/add-user", &add_user_res);        // User creation endpoint
@@ -59,6 +61,7 @@ int main() {
     ws.register_resource("/set-user-info", &set_user_info_res); 
     ws.register_resource("/get-user-info", &get_user_info_res); 
     ws.register_resource("/get-partner-info", &get_partner_info_res); 
+    ws.register_resource("/answer-daily-question", &answer_daily_question_res); 
 
     
     std::cout << "Server running on http://localhost:" << PORT << "\n";

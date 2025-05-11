@@ -3,6 +3,7 @@
 #include "../include/db.h"
 #include "../include/regex.h"
 #include <cstdint>
+#include <iostream>
 #include <memory>
 #include <string>
 
@@ -277,6 +278,30 @@ std::shared_ptr<http_response> get_unanswered_quizzes_for_pair_resource::render(
     return std::make_shared<string_response>(unanswered_quizes, 200, "text/plain");
 }
 
+std::shared_ptr<http_response> answer_daily_question_resource::render(const http_request& req) {
+    std::cout<<"ASDASDSAD"<<std::endl;   
+
+    std::string jwt = req.get_arg("token");
+    std::cout<<"token: " << jwt << std::endl;
+    int64_t question_id = std::stoll(req.get_arg("question_id"));
+    std::cout<<"q_id: " << question_id << std::endl;
+    std::string answer = req.get_arg("answer");
+    std::cout << "answer: " << answer << std::endl;
+    if (answer.empty()) return std::make_shared<string_response>("Invalid answer", 401, "text/plain");
+    int64_t id = get_user_id(jwt);
+    if (id == -2) return std::make_shared<string_response>("Invalid JWT token", 401, "text/plain");
+    if (id == -1) return std::make_shared<string_response>("Internal Server Error", 500, "text/plain");
+    
+
+    try {
+        answer_daily_question(id, question_id, answer);
+    }  catch (const pqxx::sql_error &e) {
+        return std::make_shared<string_response>(e.what(), 500, "text/plain");
+    } catch (const std::exception &e) {   
+       return std::make_shared<string_response>("Internal Server Error", 500, "text/plain");
+    }
+    return std::make_shared<string_response>("Success", 200, "text/plain");
+}
 
 /*
 // Validate JWT Token

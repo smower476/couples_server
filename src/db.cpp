@@ -44,6 +44,8 @@ void create_tables() {
     create_table(tables::create_quiz_user_answer_table);
     create_table(tables::create_quiz_content_table);
     create_table(tables::create_quiz_answer_content_table);
+    create_table(tables::create_daily_question_table);
+    create_table(tables::create_daily_question_answer_table);
 }
 
 std::string hash_password(const std::string& password) {
@@ -767,3 +769,31 @@ std::string get_unanswered_quizzes_for_pair(const int64_t user_id){
     }
 }
 
+///////////////////////////////////////////////////////
+// Daily Question
+///////////////////////////////////////////////////////
+
+void answer_daily_question(const int64_t user_id, const int64_t daily_question_id, const std::string& answer){
+    try {
+        ConnectionHandle handle(*conn_pool);
+        pqxx::work txn(*handle.get());        
+
+        
+        std::string query = R"( 
+        INSERT INTO daily_question_answer (answer, user_id, daily_question_id)
+        VALUES ($1, $2, $3)
+        )";
+
+        std::cout << "executing query: " << query << " with user id: " << user_id << std::endl;
+        txn.exec_params(query, answer, user_id, daily_question_id);
+        txn.commit();
+        
+    } catch (const pqxx::sql_error &e) {
+        std::cerr << "sql error: " << e.what() << std::endl;
+        std::cerr << "failed query: " << e.query() << std::endl;
+        throw;
+    } catch (const std::exception &e) {
+        std::cerr << "error: failed to process db request: " << e.what() << std::endl;
+        throw;
+    }
+}
