@@ -2,18 +2,30 @@
 
 #ADDRESS=129.158.234.85:8080
 ADDRESS=localhost:8080
-LOGIN=test1test
+LOGIN1=test1test
+LOGIN2=test2test
 PASSWORD=King22401825
 
-# Create user
-printf "Create user\n"
-curl -X POST http://$ADDRESS/add-user -d "username=$LOGIN&password=$PASSWORD"
+# Create users
+curl -X POST http://$ADDRESS/add-user -d "username=$LOGIN1&password=$PASSWORD"
+curl -X POST http://$ADDRESS/add-user -d "username=$LOGIN2&password=$PASSWORD"
 printf "\n\n"
 
 # Get JWT token
-printf "Get JWT token\n"
-JWT=$(curl -X POST http://$ADDRESS/login -d "username=$LOGIN&password=$PASSWORD")
-echo $JWT
+JWT1=$(curl -X POST http://$ADDRESS/login -d "username=$LOGIN1&password=$PASSWORD")
+JWT2=$(curl -X POST http://$ADDRESS/login -d "username=$LOGIN2&password=$PASSWORD")
+echo $JWT1
+printf "\n\n"
+echo $JWT2
+printf "\n\n"
+
+# Get link code
+LINK_CODE=$(curl -X POST http://$ADDRESS/get-link-code -d "token=$JWT1")
+echo $LINK_CODE
+printf "\n\n"
+
+# Link users
+curl -X POST http://$ADDRESS/link-users -d "token=$JWT2&link_code=$LINK_CODE"
 printf "\n\n"
 
 # Get most recent available qiuz data
@@ -28,7 +40,7 @@ printf "\n\n"
 
 # Set question answer
 printf "Set question answer\n"
-curl -X POST http://$ADDRESS/answer-daily-question -d "token=$JWT&question_id=1&answer=answer"
+curl -X POST http://$ADDRESS/answer-daily-question -d "token=$JWT1&question_id=1&answer=answer"
 printf "\n\n"
 
 # Get question user answer
@@ -42,9 +54,9 @@ printf "\n\n"
 # printf "\n\n"
 
 # Get unanswered questionzes
-# printf "Get unanswered questionzes\n"
-# curl -X POST http://$ADDRESS/get-unanswered-questiones -d "token=$JWT"
-# printf "\n\n"
+printf "Get unanswered questions\n"
+curl -X POST http://$ADDRESS/get-unanswered-questions -d "token=$JWT1"
+printf "\n\n"
 
 # Get unanswered questionzes
 # printf "Get unanswered questionzes for pair\n"

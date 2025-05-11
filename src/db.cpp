@@ -797,3 +797,60 @@ void answer_daily_question(const int64_t user_id, const int64_t daily_question_i
         throw;
     }
 }
+std::string get_unanswered_questions_for_pair(const int64_t user_id){
+    try {
+        ConnectionHandle handle(*conn_pool);
+        pqxx::work txn(*handle.get());        
+
+        
+        std::string query = R"( 
+                WITH pair AS (
+        SELECT id AS u1, linked_user AS u2
+          FROM users
+         WHERE id = $1
+    ),
+    answer_stats AS (
+        SELECT
+          dqa.daily_question_id,
+          MAX(CASE WHEN dqa.user_id = pair.u1 THEN dqa.answered_at END) AS a1,
+          MAX(CASE WHEN dqa.user_id = pair.u2 THEN dqa.answered_at END) AS a2
+        FROM daily_question_answer AS dqa
+        CROSS JOIN pair
+        WHERE dqa.user_id IN (pair.u1, pair.u2)
+        GROUP BY dqa.daily_question_id
+    ),
+    candidates AS (
+        SELECT dq.*
+          FROM daily_question AS dq
+          CROSS JOIN pair
+     LEFT JOIN answer_stats AS stats
+            ON dq.id = stats.daily_question_id
+         WHERE NOT (
+                  (stats.a1 < NOW() - INTERVAL '1 day' AND stats.a2 IS NULL)
+               OR (stats.a2 < NOW() - INTERVAL '1 day' AND stats.a1 IS NULL)
+              )
+    )
+    SELECT COALESCE(
+        JSONB_AGG(TO_JSONB(candidates) - 'created_at'),  -- drop timestamp if you like
+        '[]'::JSONB
+    ) AS questions
+      FROM candidates;
+        )";
+
+        std::cout << "executing query: " << query << " with user id: " << user_id << std::endl;
+        pqxx::result result = txn.exec_params(query, user_id);
+        txn.commit();
+        
+
+        std::string user_answer_json = result[0][0].as<std::string>();
+
+        return user_answer_json;
+    } catch (const pqxx::sql_error &e) {
+        std::cerr << "sql error: " << e.what() << std::endl;
+        std::cerr << "failed query: " << e.query() << std::endl;
+        throw;
+    } catch (const std::exception &e) {
+        std::cerr << "error: failed to process db request: " << e.what() << std::endl;
+        throw;
+    }
+}
