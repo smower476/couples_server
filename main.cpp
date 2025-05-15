@@ -45,6 +45,7 @@ int main() {
     
     answer_daily_question_resource answer_daily_question_res; 
     get_unanswered_questions_resource get_unanswered_questions_res;
+    get_daily_question_answer_resource get_daily_question_answer_res;
 
     ws.register_resource("/login", &login_res); // Login endpoint
 //    ws.register_resource("/validate-token", &validate_res);  // Token validation endpoint
@@ -64,7 +65,8 @@ int main() {
     ws.register_resource("/get-partner-info", &get_partner_info_res); 
     ws.register_resource("/answer-daily-question", &answer_daily_question_res); 
     ws.register_resource("/get-unanswered-questions", &get_unanswered_questions_res);
-    
+    ws.register_resource("/get-daily-question-answer", &get_daily_question_answer_res);
+
     std::cout << "Server running on http://localhost:" << PORT << "\n";
 
     ws.start(true);

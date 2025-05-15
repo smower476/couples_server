@@ -98,5 +98,6 @@ std::string get_answered_quizes(const int64_t user_id);
 std::string get_unanswered_quizes(const int64_t user_id);
 void answer_daily_question(const int64_t user_id, const int64_t daily_question_id, const std::string& answer);
 std::string get_unanswered_questions_for_pair(const int64_t user_id);
+std::string get_daily_question_answer(const int64_t user_id, const int64_t daily_question_id);
 #endif
 

@@ -279,14 +279,9 @@ std::shared_ptr<http_response> get_unanswered_quizzes_for_pair_resource::render(
 }
 
 std::shared_ptr<http_response> answer_daily_question_resource::render(const http_request& req) {
-    std::cout<<"ASDASDSAD"<<std::endl;   
-
     std::string jwt = req.get_arg("token");
-    std::cout<<"token: " << jwt << std::endl;
     int64_t question_id = std::stoll(req.get_arg("question_id"));
-    std::cout<<"q_id: " << question_id << std::endl;
     std::string answer = req.get_arg("answer");
-    std::cout << "answer: " << answer << std::endl;
     if (answer.empty()) return std::make_shared<string_response>("Invalid answer", 401, "text/plain");
     int64_t id = get_user_id(jwt);
     if (id == -2) return std::make_shared<string_response>("Invalid JWT token", 401, "text/plain");
@@ -317,6 +312,24 @@ std::shared_ptr<http_response> get_unanswered_questions_resource::render(const h
        return std::make_shared<string_response>("Internal Server Error", 500, "text/plain");
     }
     return std::make_shared<string_response>(unanswered_questions, 200, "text/plain");
+}
+
+std::shared_ptr<http_response> get_daily_question_answer_resource::render(const http_request& req) {
+    std::string jwt = req.get_arg("token");
+    int64_t daily_question_id = std::stoll(req.get_arg("daily_question_id"));
+
+    int64_t id = get_user_id(jwt);
+    if (id == -2) return std::make_shared<string_response>("Invalid JWT token", 401, "text/plain");
+    if (id == -1) return std::make_shared<string_response>("Internal Server Error", 500, "text/plain");
+    std::string daily_question_answer;
+    try {
+        daily_question_answer = get_daily_question_answer(id, daily_question_id);
+    }  catch (const pqxx::sql_error &e) {
+        return std::make_shared<string_response>(e.what(), 500, "text/plain");
+    } catch (const std::exception &e) {   
+       return std::make_shared<string_response>("Internal Server Error", 500, "text/plain");
+    }
+    return std::make_shared<string_response>(daily_question_answer, 200, "text/plain");
 }
 
 

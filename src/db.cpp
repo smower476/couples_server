@@ -858,3 +858,56 @@ std::string get_unanswered_questions_for_pair(const int64_t user_id){
         throw;
     }
 }
+
+std::string get_daily_question_answer(const int64_t user_id, const int64_t daily_question_id){
+    try {
+        ConnectionHandle handle(*conn_pool);
+        pqxx::work txn(*handle.get());        
+
+        
+        std::string query = R"( 
+        WITH pair AS (
+            SELECT id AS user_id, linked_user
+            FROM users
+            WHERE id = $1
+      ),
+      answers AS (
+        SELECT
+          dqa.user_id,
+          u.username,
+          dqa.answer,
+          dqa.answered_at
+        FROM daily_question_answer dqa
+        JOIN users u ON u.id = dqa.user_id
+        JOIN pair p ON dqa.user_id IN (p.user_id, p.linked_user)
+        WHERE dqa.daily_question_id = $2
+      )
+      SELECT json_agg(
+        json_build_object(
+          'user_id', user_id,
+          'username', username,
+          'answer', answer,
+          'answered_at', answered_at
+        )
+      ) AS answers_json
+      FROM answers
+        )";
+
+        std::cout << "executing query: " << query << " with user id: " << user_id << " daily question id: " << daily_question_id << std::endl;
+        pqxx::result result = txn.exec_params(query, user_id, daily_question_id);
+        txn.commit();
+        
+
+        std::string user_answer_json = result[0][0].as<std::string>();
+
+        return user_answer_json;
+} catch (const pqxx::sql_error &e) {
+        std::cerr << "sql error: " << e.what() << std::endl;
+        std::cerr << "failed query: " << e.query() << std::endl;
+        throw;
+    } catch (const std::exception &e) {
+        std::cerr << "error: failed to process db request: " << e.what() << std::endl;
+        throw;
+    }
+}
+
