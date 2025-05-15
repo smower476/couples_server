@@ -70,7 +70,8 @@ namespace tables{
         answered_at TIMESTAMP DEFAULT NOW(), 
         daily_question_id INT NOT NULL,
         FOREIGN KEY (user_id) REFERENCES users(id), 
-        FOREIGN KEY (daily_question_id) REFERENCES daily_question(id) 
+        FOREIGN KEY (daily_question_id) REFERENCES daily_question(id),
+        UNIQUE (user_id, daily_question_id)
         ))";
 
 }

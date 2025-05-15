@@ -40,7 +40,7 @@ printf "\n\n"
 
 # Set question answer
 printf "Set question answer\n"
-curl -X POST http://$ADDRESS/answer-daily-question -d "token=$JWT1&question_id=1&answer=answer"
+curl -X POST http://$ADDRESS/answer-daily-question -d "token=$JWT1&question_id=1&answer=answer2"
 printf "\n\n"
 
 # Get question user answer

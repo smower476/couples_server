@@ -782,6 +782,10 @@ void answer_daily_question(const int64_t user_id, const int64_t daily_question_i
         std::string query = R"( 
         INSERT INTO daily_question_answer (answer, user_id, daily_question_id)
         VALUES ($1, $2, $3)
+        ON CONFLICT (user_id, daily_question_id)
+        DO UPDATE SET
+        answer = EXCLUDED.answer,
+        answered_at = NOW()
         )";
 
         std::cout << "executing query: " << query << " with user id: " << user_id << std::endl;
