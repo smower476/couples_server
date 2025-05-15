@@ -867,30 +867,53 @@ std::string get_daily_question_answer(const int64_t user_id, const int64_t daily
         
         std::string query = R"( 
         WITH pair AS (
-            SELECT id AS user_id, linked_user
-            FROM users
-            WHERE id = $1
-      ),
-      answers AS (
-        SELECT
-          dqa.user_id,
-          u.username,
-          dqa.answer,
-          dqa.answered_at
-        FROM daily_question_answer dqa
-        JOIN users u ON u.id = dqa.user_id
-        JOIN pair p ON dqa.user_id IN (p.user_id, p.linked_user)
-        WHERE dqa.daily_question_id = $2
-      )
-      SELECT json_agg(
-        json_build_object(
-          'user_id', user_id,
-          'username', username,
-          'answer', answer,
-          'answered_at', answered_at
-        )
-      ) AS answers_json
-      FROM answers
+    SELECT id AS user_id, linked_user
+    FROM users
+    WHERE id = $1
+),
+question AS (
+    SELECT *
+    FROM daily_question
+    WHERE id = $2
+),
+self_answer AS (
+    SELECT
+      dqa.answer,
+      dqa.answered_at
+    FROM daily_question_answer dqa
+    JOIN pair ON dqa.user_id = pair.user_id
+    WHERE dqa.daily_question_id = $2
+    ORDER BY dqa.answered_at DESC
+    LIMIT 1
+),
+linked_answer AS (
+    SELECT
+      dqa.answer,
+      dqa.answered_at
+    FROM daily_question_answer dqa
+    JOIN pair ON dqa.user_id = pair.linked_user
+    WHERE dqa.daily_question_id = $2
+    ORDER BY dqa.answered_at DESC
+    LIMIT 1
+)
+SELECT json_build_object(
+  'question_id', q.id,
+  'question_name', q.question_name,
+  'question_content', q.question_content,
+  'created_at', q.created_at,
+  'self', json_build_object(
+      'answer', sa.answer,
+      'answered_at', sa.answered_at
+  ),
+  'linked', json_build_object(
+      'answer', la.answer,
+      'answered_at', la.answered_at
+  )
+) AS result
+FROM question q
+LEFT JOIN self_answer sa ON TRUE
+LEFT JOIN linked_answer la ON TRUE;
+
         )";
 
         std::cout << "executing query: " << query << " with user id: " << user_id << " daily question id: " << daily_question_id << std::endl;
