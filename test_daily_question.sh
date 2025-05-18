@@ -30,39 +30,17 @@ printf "Link users\n"
 curl -X POST http://$ADDRESS/link-users -d "token=$JWT2&link_code=$LINK_CODE"
 printf "\n\n"
 
-# Get most recent available qiuz data
-# printf "Get daily question\n"
-# curl -X POST http://$ADDRESS/get-daily-question -d "token=$JWT"
-# printf "\n\n"
-
-# Get question content
-# printf "Get question content\n"
-# curl -X POST http://$ADDRESS/get-question-content -d "token=$JWT&quiz_id=1065019527751499777"
-# printf "\n\n"
-
 # Set question answer
 printf "Set question answer\n"
-curl -X POST http://$ADDRESS/answer-daily-question -d "token=$JWT2&question_id=1&answer=answer2"
+curl -X POST http://$ADDRESS/answer-daily-question -d "token=$JWT1&question_id=1072370284621037569&answer=answer2"
 printf "\n\n"
 
 # Get daily question user answer
 printf "Get daily question user answer\n"
-curl -X POST http://$ADDRESS/get-daily-question-answer -d "token=$JWT1&daily_question_id=1"
+curl -X POST http://$ADDRESS/get-daily-question-answer -d "token=$JWT1&daily_question_id=1072370284621037569"
 printf "\n\n"
-
-# Get answered questiones
-# printf "Get answered questionzes\n"
-# curl -X POST http://$ADDRESS/get-answered-questiones -d "token=$JWT"
-# printf "\n\n"
 
 # Get unanswered questionzes
 printf "Get unanswered questions\n"
 curl -X POST http://$ADDRESS/get-unanswered-questions -d "token=$JWT1"
 printf "\n\n"
-
-# Get unanswered questionzes
-# printf "Get unanswered questionzes for pair\n"
-# curl -X POST http://$ADDRESS/get-unanswered-questionzes-for-pair -d "token=$JWT"
-# printf "\n\n"
-
-

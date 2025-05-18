@@ -807,38 +807,52 @@ std::string get_unanswered_questions_for_pair(const int64_t user_id){
         pqxx::work txn(*handle.get());        
 
         
-        std::string query = R"( 
-                WITH pair AS (
+       std::string query = R"(
+        WITH pair AS (
+        -- Select the user and their linked partner
         SELECT id AS u1, linked_user AS u2
-          FROM users
-         WHERE id = $1
-    ),
-    answer_stats AS (
+        FROM users
+        WHERE id = $1
+        ),
+        answer_stats AS (
+        -- Gather the latest answer timestamps for each user in the pair for each question
         SELECT
           dqa.daily_question_id,
-          MAX(CASE WHEN dqa.user_id = pair.u1 THEN dqa.answered_at END) AS a1,
-          MAX(CASE WHEN dqa.user_id = pair.u2 THEN dqa.answered_at END) AS a2
+          MAX(CASE WHEN dqa.user_id = pair.u1 THEN dqa.answered_at END) AS user1_answered_at,
+          MAX(CASE WHEN dqa.user_id = pair.u2 THEN dqa.answered_at END) AS user2_answered_at
         FROM daily_question_answer AS dqa
-        CROSS JOIN pair
-        WHERE dqa.user_id IN (pair.u1, pair.u2)
+        CROSS JOIN pair -- Make pair.u1 and pair.u2 available for filtering and aggregation
+        WHERE dqa.user_id IN (pair.u1, pair.u2) -- Consider only answers from the pair
         GROUP BY dqa.daily_question_id
-    ),
-    candidates AS (
+        ),
+        candidates AS (
+        -- Select daily questions that are not considered "stale" for the pair
+        -- AND have not been answered by both partners.
         SELECT dq.*
-          FROM daily_question AS dq
-          CROSS JOIN pair
-     LEFT JOIN answer_stats AS stats
-            ON dq.id = stats.daily_question_id
-         WHERE NOT (
-                  (stats.a1 < NOW() - INTERVAL '1 day' AND stats.a2 IS NULL)
-               OR (stats.a2 < NOW() - INTERVAL '1 day' AND stats.a1 IS NULL)
-              )
-    )
-    SELECT COALESCE(
-        JSONB_AGG(TO_JSONB(candidates) - 'created_at'),  -- drop timestamp if you like
+        FROM daily_question AS dq
+        LEFT JOIN answer_stats AS stats ON dq.id = stats.daily_question_id
+        -- A question is a candidate if:
+        -- 1. It's NOT stale (stale: one partner answered > 1 day ago, the other never answered).
+        -- AND
+        -- 2. It's NOT answered by both partners.
+        WHERE NOT (
+            -- Case 1: Stale - User1 answered over a day ago, and User2 has never answered.
+            (stats.user1_answered_at IS NOT NULL AND stats.user1_answered_at < (NOW() - INTERVAL '1 day') AND stats.user2_answered_at IS NULL)
+            OR
+            -- Case 2: Stale - User2 answered over a day ago, and User1 has never answered.
+            (stats.user2_answered_at IS NOT NULL AND stats.user2_answered_at < (NOW() - INTERVAL '1 day') AND stats.user1_answered_at IS NULL)
+            OR
+            -- Case 3: Both partners have answered (regardless of when).
+            (stats.user1_answered_at IS NOT NULL AND stats.user2_answered_at IS NOT NULL)
+        )
+        )
+        -- Aggregate the candidate questions into a JSON array, removing 'created_at' from each.
+        -- If no candidates, return an empty JSON array.
+        SELECT COALESCE(
+        JSONB_AGG(TO_JSONB(candidates) - 'created_at' ORDER BY candidates.id), -- Ensure consistent ordering for aggregation
         '[]'::JSONB
-    ) AS questions
-      FROM candidates;
+        ) AS questions
+        FROM candidates;
         )";
 
         std::cout << "executing query: " << query << " with user id: " << user_id << std::endl;
