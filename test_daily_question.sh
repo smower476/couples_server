@@ -44,3 +44,9 @@ printf "\n\n"
 printf "Get unanswered questions\n"
 curl -X POST http://$ADDRESS/get-unanswered-questions -d "token=$JWT1"
 printf "\n\n"
+
+# Get answered questionzes
+printf "Get answered questions\n"
+curl -X POST http://$ADDRESS/get-answered-questions -d "token=$JWT1"
+printf "\n\n"
+

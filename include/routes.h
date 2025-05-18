@@ -102,4 +102,9 @@ class get_daily_question_answer_resource : public http_resource {
 public:
     std::shared_ptr<http_response> render(const http_request& req) override;
 };
+
+class get_answered_questions_resource : public http_resource {
+public:
+    std::shared_ptr<http_response> render(const http_request& req) override;
+};
 #endif

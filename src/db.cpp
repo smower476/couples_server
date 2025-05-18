@@ -881,53 +881,52 @@ std::string get_daily_question_answer(const int64_t user_id, const int64_t daily
         
         std::string query = R"( 
         WITH pair AS (
-    SELECT id AS user_id, linked_user
-    FROM users
-    WHERE id = $1
-),
-question AS (
-    SELECT *
-    FROM daily_question
-    WHERE id = $2
-),
-self_answer AS (
-    SELECT
-      dqa.answer,
-      dqa.answered_at
-    FROM daily_question_answer dqa
-    JOIN pair ON dqa.user_id = pair.user_id
-    WHERE dqa.daily_question_id = $2
-    ORDER BY dqa.answered_at DESC
-    LIMIT 1
-),
-linked_answer AS (
-    SELECT
-      dqa.answer,
-      dqa.answered_at
-    FROM daily_question_answer dqa
-    JOIN pair ON dqa.user_id = pair.linked_user
-    WHERE dqa.daily_question_id = $2
-    ORDER BY dqa.answered_at DESC
-    LIMIT 1
-)
-SELECT json_build_object(
-  'question_id', q.id,
-  'question_name', q.question_name,
-  'question_content', q.question_content,
-  'created_at', q.created_at,
-  'self', json_build_object(
-      'answer', sa.answer,
-      'answered_at', sa.answered_at
-  ),
-  'linked', json_build_object(
-      'answer', la.answer,
-      'answered_at', la.answered_at
-  )
-) AS result
-FROM question q
-LEFT JOIN self_answer sa ON TRUE
-LEFT JOIN linked_answer la ON TRUE;
-
+        SELECT id AS user_id, linked_user
+        FROM users
+        WHERE id = $1
+    ),
+    question AS (
+        SELECT *
+        FROM daily_question
+        WHERE id = $2
+    ),
+    self_answer AS (
+        SELECT
+          dqa.answer,
+          dqa.answered_at
+        FROM daily_question_answer dqa
+        JOIN pair ON dqa.user_id = pair.user_id
+        WHERE dqa.daily_question_id = $2
+        ORDER BY dqa.answered_at DESC
+        LIMIT 1
+    ),
+    linked_answer AS (
+        SELECT
+          dqa.answer,
+          dqa.answered_at
+        FROM daily_question_answer dqa
+        JOIN pair ON dqa.user_id = pair.linked_user
+        WHERE dqa.daily_question_id = $2
+        ORDER BY dqa.answered_at DESC
+        LIMIT 1
+    )
+    SELECT json_build_object(
+      'question_id', q.id,
+      'question_name', q.question_name,
+      'question_content', q.question_content,
+      'created_at', q.created_at,
+      'self', json_build_object(
+          'answer', sa.answer,
+          'answered_at', sa.answered_at
+      ),
+      'linked', json_build_object(
+          'answer', la.answer,
+          'answered_at', la.answered_at
+      )
+    ) AS result
+    FROM question q
+    LEFT JOIN self_answer sa ON TRUE
+    LEFT JOIN linked_answer la ON TRUE;
         )";
 
         std::cout << "executing query: " << query << " with user id: " << user_id << " daily question id: " << daily_question_id << std::endl;
@@ -939,6 +938,46 @@ LEFT JOIN linked_answer la ON TRUE;
 
         return user_answer_json;
 } catch (const pqxx::sql_error &e) {
+        std::cerr << "sql error: " << e.what() << std::endl;
+        std::cerr << "failed query: " << e.query() << std::endl;
+        throw;
+    } catch (const std::exception &e) {
+        std::cerr << "error: failed to process db request: " << e.what() << std::endl;
+        throw;
+    }
+}
+
+std::string get_answered_questions_for_pair(const int64_t user_id){
+    try {
+        ConnectionHandle handle(*conn_pool);
+        pqxx::work txn(*handle.get());        
+
+        
+       std::string query = R"(
+        SELECT COALESCE(json_agg(dq), '[]'::json) AS answered_by_both
+FROM (
+    SELECT dq.*
+    FROM users u
+    JOIN users lu ON u.linked_user = lu.id
+    JOIN daily_question dq ON dq.id IN (
+        SELECT daily_question_id FROM daily_question_answer WHERE user_id = u.id
+        INTERSECT
+        SELECT daily_question_id FROM daily_question_answer WHERE user_id = lu.id
+    )
+    WHERE u.id = $1
+) AS dq;
+
+        )";
+
+        std::cout << "executing query: " << query << " with user id: " << user_id << std::endl;
+        pqxx::result result = txn.exec_params(query, user_id);
+        txn.commit();
+        
+
+        std::string user_answer_json = result[0][0].as<std::string>();
+
+        return user_answer_json;
+    } catch (const pqxx::sql_error &e) {
         std::cerr << "sql error: " << e.what() << std::endl;
         std::cerr << "failed query: " << e.query() << std::endl;
         throw;
