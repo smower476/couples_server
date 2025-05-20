@@ -702,6 +702,14 @@ class TestAPIEndpoints(unittest.TestCase):
         self.assertTrue(data[0]["linked"] == None)
         self.assertIsInstance(data[0]["self"], dict)
 
+        #Check that question is still in unanswered questions
+        get_unanswered_daily_question_url = f"{BASE_URL}/get-unanswered-questions"
+        payload_daily_question = {"token": token}
+        daily_question_response = requests.post(get_unanswered_daily_question_url, data=payload_daily_question)
+        daily_question_data = daily_question_response.json()
+        self.assertTrue(str(valid_question_id) in daily_question_data[0]["id"])
+        self.assertTrue(str(valid_question_id) in response_answered.text)
+
         #Second user answers the question
         answer_daily_question_url2 = f"{BASE_URL}/answer-daily-question"
         payload_answer2 = {"token": token2, "question_id": valid_question_id, "answer": "Test Answer"}
@@ -720,6 +728,15 @@ class TestAPIEndpoints(unittest.TestCase):
         self.assertIn("linked", response_answered2.text)
         self.assertIsInstance(data2[0]["linked"], dict)
         self.assertIsInstance(data2[0]["self"], dict)
+
+        #Check that question dissapears from unanswered questions
+        get_unanswered_daily_question_url = f"{BASE_URL}/get-unanswered-questions"
+        payload_daily_question = {"token": token}
+        daily_question_response = requests.post(get_unanswered_daily_question_url, data=payload_daily_question)
+        daily_question_data = daily_question_response.json()
+        self.assertTrue(str(valid_question_id) not in daily_question_data[0]["id"])
+        self.assertTrue(str(valid_question_id) not in response_answered2.text)
+
 
     # Note: Testing for 401 Unauthorized for /add-user might require a different setup
     # if it's related to existing users or other authorization mechanisms not clear from docs.
