@@ -49,7 +49,8 @@ int main() {
     get_answered_questions_resource get_answered_questions_res;
 
     get_date_ideas_resource get_date_ideas_res;
-
+    answer_date_ideas_resource answer_date_ideas_res;
+    
     ws.register_resource("/login", &login_res); // Login endpoint
 //    ws.register_resource("/validate-token", &validate_res);  // Token validation endpoint
     ws.register_resource("/add-user", &add_user_res);        // User creation endpoint
@@ -71,7 +72,8 @@ int main() {
     ws.register_resource("/get-daily-question-answer", &get_daily_question_answer_res);
     ws.register_resource("/get-answered-questions", &get_answered_questions_res);
     ws.register_resource("/get-date-ideas", &get_date_ideas_res);
-    
+    ws.register_resource("/submit-date-idea", &answer_date_ideas_res);
+
     std::cout << "Server running on http://localhost:" << PORT << "\n";
 
     ws.start(true);

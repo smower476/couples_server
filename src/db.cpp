@@ -1031,3 +1031,33 @@ std::string get_date_ideas(const int64_t user_id) {
         throw;
     }
 }
+
+void answer_date_idea(const int64_t user_id, const int64_t idea_id, const std::string& answer) {
+    try {
+        ConnectionHandle handle(*conn_pool);
+        pqxx::work txn(*handle.get());
+
+        const std::string query = R"( 
+            INSERT INTO date_idea_answer (user_id, idea_id, answer)
+            VALUES ($1, $2, $3::idea_answer)
+            ON CONFLICT (user_id, idea_id) 
+            DO UPDATE SET 
+                answer = EXCLUDED.answer,
+                created_at = NOW()
+        )";  
+
+        std::cout << "Executing query for user: " << user_id 
+                  << ", idea: " << idea_id 
+                  << ", answer: " << answer << std::endl;
+
+        txn.exec_params(query, user_id, idea_id, answer);
+        txn.commit();
+    } catch (const pqxx::sql_error &e) {
+        std::cerr << "sql error: " << e.what() << std::endl;
+        std::cerr << "failed query: " << e.query() << std::endl;
+        throw;
+    } catch (const std::exception &e) {
+        std::cerr << "error: failed to process db request: " << e.what() << std::endl;
+        throw;
+    }
+}

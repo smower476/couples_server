@@ -121,5 +121,6 @@ std::string get_unanswered_questions_for_pair(const int64_t user_id);
 std::string get_daily_question_answer(const int64_t user_id, const int64_t daily_question_id);
 std::string get_answered_questions_for_pair(const int64_t user_id);
 std::string get_date_ideas(const int64_t user_id);
+void answer_date_idea(const int64_t user_id, const int64_t idea_id, const std::string& answer);
 #endif
 
