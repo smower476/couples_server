@@ -74,6 +74,26 @@ namespace tables{
         UNIQUE (user_id, daily_question_id)
         ))";
 
+     inline std::string create_idea_answer_enum = R"(
+        CREATE TYPE IF NOT EXISTS idea_answer AS ENUM ('yes', 'no', 'maybe');    
+        )";
+
+    inline std::string create_date_idea_table = R"(CREATE TABLE IF NOT EXISTS date_idea (
+        id SERIAL PRIMARY KEY,
+        title TEXT NOT NULL,
+        description TEXT NOT NULL
+        ))";
+
+
+     inline std::string create_date_idea_answer = R"(CREATE TABLE IF NOT EXISTS date_idea_answer (
+        id SERIAL PRIMARY KEY,
+        user_id INT NOT NULL REFERENCES users(id),
+        idea_id INT NOT NULL REFERENCES date_idea(id),
+        answer idea_answer NOT NULL,
+        created_at TIMESTAMP DEFAULT NOW(),
+        UNIQUE (user_id, idea_id)
+        ))";
+
 }
 extern pqxx::connection conn;
 int create_table(const std::string content);
@@ -100,5 +120,8 @@ void answer_daily_question(const int64_t user_id, const int64_t daily_question_i
 std::string get_unanswered_questions_for_pair(const int64_t user_id);
 std::string get_daily_question_answer(const int64_t user_id, const int64_t daily_question_id);
 std::string get_answered_questions_for_pair(const int64_t user_id);
+std::string get_date_ideas(const int64_t user_id);
+void answer_date_idea(const int64_t user_id, const int64_t idea_id, const std::string& answer);
+std::string get_matched_date_ideas_answers(const int64_t user_id);
 #endif
 

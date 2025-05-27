@@ -348,6 +348,56 @@ std::shared_ptr<http_response> get_answered_questions_resource::render(const htt
     return std::make_shared<string_response>(answered_questions, 200, "text/plain");
 }
 
+std::shared_ptr<http_response> get_date_ideas_resource::render(const http_request& req) {
+    std::string jwt = req.get_arg("token");
+    int64_t id = get_user_id(jwt);
+    if (id == -2) return std::make_shared<string_response>("Invalid JWT token", 401, "text/plain");
+    if (id == -1) return std::make_shared<string_response>("Internal Server Error", 500, "text/plain");
+    std::string date_ideas;
+    try {
+        date_ideas = get_date_ideas(id);
+    }  catch (const pqxx::sql_error &e) {
+        return std::make_shared<string_response>(e.what(), 500, "text/plain");
+    } catch (const std::exception &e) {   
+       return std::make_shared<string_response>("Internal Server Error", 500, "text/plain");
+    }
+    return std::make_shared<string_response>(date_ideas, 200, "text/plain");
+}
+
+std::shared_ptr<http_response> answer_date_ideas_resource::render(const http_request& req) {
+    std::string jwt = req.get_arg("token");
+    int64_t id = get_user_id(jwt);
+
+    int64_t idea_id = std::stoll(req.get_arg("idea_id"));
+    std::string answer = req.get_arg("answer");
+    
+    if (id == -2) return std::make_shared<string_response>("Invalid JWT token", 401, "text/plain");
+    if (id == -1) return std::make_shared<string_response>("Internal Server Error", 500, "text/plain");
+    try {
+        answer_date_idea(id, idea_id, answer);
+    }  catch (const pqxx::sql_error &e) {
+        return std::make_shared<string_response>(e.what(), 500, "text/plain");
+    } catch (const std::exception &e) {   
+       return std::make_shared<string_response>("Internal Server Error", 500, "text/plain");
+    }
+    return std::make_shared<string_response>("Success", 200, "text/plain");
+}
+
+std::shared_ptr<http_response> get_matched_date_ideas_resource::render(const http_request& req) {
+    std::string jwt = req.get_arg("token");
+    int64_t id = get_user_id(jwt);
+    if (id == -2) return std::make_shared<string_response>("Invalid JWT token", 401, "text/plain");
+    if (id == -1) return std::make_shared<string_response>("Internal Server Error", 500, "text/plain");
+    std::string matched_date_ideas;
+    try {
+        matched_date_ideas = get_matched_date_ideas_answers(id);
+    }  catch (const pqxx::sql_error &e) {
+        return std::make_shared<string_response>(e.what(), 500, "text/plain");
+    } catch (const std::exception &e) {   
+       return std::make_shared<string_response>("Internal Server Error", 500, "text/plain");
+    }
+    return std::make_shared<string_response>(matched_date_ideas, 200, "text/plain");
+}
 
 /*
 // Validate JWT Token
