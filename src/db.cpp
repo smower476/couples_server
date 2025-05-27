@@ -995,7 +995,6 @@ std::string get_date_ideas(const int64_t user_id) {
         ConnectionHandle handle(*conn_pool);
         pqxx::work txn(*handle.get());
 
-        // Исправленный SQL-запрос с COALESCE
         const std::string query = R"(
             SELECT COALESCE(
                 json_agg(json_build_object(
@@ -1055,9 +1054,59 @@ void answer_date_idea(const int64_t user_id, const int64_t idea_id, const std::s
     } catch (const pqxx::sql_error &e) {
         std::cerr << "sql error: " << e.what() << std::endl;
         std::cerr << "failed query: " << e.query() << std::endl;
-        throw;
+throw;
     } catch (const std::exception &e) {
         std::cerr << "error: failed to process db request: " << e.what() << std::endl;
         throw;
     }
 }
+
+std::string get_matched_date_ideas_answers(const int64_t user_id) {
+    try {
+        ConnectionHandle handle(*conn_pool);
+        pqxx::work txn(*handle.get());
+
+        const std::string query = R"(
+        SELECT COALESCE(
+                json_agg(
+                    json_build_object(
+                        'idea_id', di.id::text,
+                        'title', di.title,
+                        'description', di.description,
+                        'user_a_vote', a.answer,
+                        'user_b_vote', b.answer
+                    )
+                ),
+                '[]'::json
+            ) AS matches
+            FROM users u
+            JOIN users lu ON u.linked_user = lu.id
+            JOIN date_idea_answer a ON u.id = a.user_id
+            JOIN date_idea_answer b ON lu.id = b.user_id AND a.idea_id = b.idea_id
+            LEFT JOIN date_idea di ON di.id = a.idea_id
+            WHERE 
+                u.id = $1 
+                AND a.answer IN ('yes', 'maybe')
+                AND b.answer IN ('yes', 'maybe')
+        )";
+
+        std::cout << "Executing query for user ID: " << user_id << std::endl;
+        pqxx::result result = txn.exec_params(query, user_id);
+        txn.commit();
+
+        if (!result.empty() && !result[0][0].is_null()) {
+            return result[0][0].as<std::string>();
+        }
+        
+        return "[]";
+
+    } catch (const pqxx::sql_error &e) {
+        std::cerr << "SQL error: " << e.what() << "\n"
+                  << "Failed query: " << e.query() << std::endl;
+        throw;
+    } catch (const std::exception &e) {
+        std::cerr << "Database error: " << e.what() << std::endl;
+        throw;
+    }
+}
+

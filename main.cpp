@@ -50,6 +50,7 @@ int main() {
 
     get_date_ideas_resource get_date_ideas_res;
     answer_date_ideas_resource answer_date_ideas_res;
+    get_matched_date_ideas_resource get_matched_date_ideas_res;
     
     ws.register_resource("/login", &login_res); // Login endpoint
 //    ws.register_resource("/validate-token", &validate_res);  // Token validation endpoint
@@ -73,7 +74,8 @@ int main() {
     ws.register_resource("/get-answered-questions", &get_answered_questions_res);
     ws.register_resource("/get-date-ideas", &get_date_ideas_res);
     ws.register_resource("/submit-date-idea", &answer_date_ideas_res);
-
+    ws.register_resource("/get-matched-date-ideas", &get_matched_date_ideas_res);
+    
     std::cout << "Server running on http://localhost:" << PORT << "\n";
 
     ws.start(true);

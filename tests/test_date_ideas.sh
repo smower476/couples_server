@@ -35,6 +35,9 @@ curl -X POST http://$ADDRESS/get-date-ideas -d "token=$JWT1"
 printf "\n\n"
 
 # Submit date idea
-curl -X POST http://$ADDRESS/submit-date-idea -d "token=$JWT1&idea_id=1075805391116959745&answer=maybe"
+curl -X POST http://$ADDRESS/submit-date-idea -d "token=$JWT2&idea_id=1075805391116959745&answer=maybe"
 printf "\n\n"
 
+# Submit date idea
+curl -X POST http://$ADDRESS/get-matched-date-ideas -d "token=$JWT1"
+printf "\n\n"

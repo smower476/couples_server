@@ -122,5 +122,6 @@ std::string get_daily_question_answer(const int64_t user_id, const int64_t daily
 std::string get_answered_questions_for_pair(const int64_t user_id);
 std::string get_date_ideas(const int64_t user_id);
 void answer_date_idea(const int64_t user_id, const int64_t idea_id, const std::string& answer);
+std::string get_matched_date_ideas_answers(const int64_t user_id);
 #endif
 
