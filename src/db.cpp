@@ -46,6 +46,9 @@ void create_tables() {
     create_table(tables::create_quiz_answer_content_table);
     create_table(tables::create_daily_question_table);
     create_table(tables::create_daily_question_answer_table);
+    create_table(tables::create_idea_answer_enum);
+    create_table(tables::create_date_idea_table);
+    create_table(tables::create_date_idea_answer);
 }
 
 std::string hash_password(const std::string& password) {
@@ -987,3 +990,44 @@ FROM (
     }
 }
 
+std::string get_date_ideas(const int64_t user_id) {
+    try {
+        ConnectionHandle handle(*conn_pool);
+        pqxx::work txn(*handle.get());
+
+        // Исправленный SQL-запрос с COALESCE
+        const std::string query = R"(
+            SELECT COALESCE(
+                json_agg(json_build_object(
+                    'id', di.id::text,
+                    'title', di.title,
+                    'description', di.description
+                )),
+                '[]'::json
+            ) AS ideas
+            FROM date_idea di
+            LEFT JOIN date_idea_answer dia 
+                ON di.id = dia.idea_id 
+                AND dia.user_id = $1
+            WHERE dia.idea_id IS NULL
+        )";
+
+        std::cout << "Executing query for user ID: " << user_id << std::endl;
+        pqxx::result result = txn.exec_params(query, user_id);
+        txn.commit();
+
+        if (!result.empty() && !result[0][0].is_null()) {
+            return result[0][0].as<std::string>();
+        }
+        
+        return "[]";
+
+    } catch (const pqxx::sql_error &e) {
+        std::cerr << "SQL error: " << e.what() << "\n"
+                  << "Failed query: " << e.query() << std::endl;
+        throw;
+    } catch (const std::exception &e) {
+        std::cerr << "Database error: " << e.what() << std::endl;
+        throw;
+    }
+}
