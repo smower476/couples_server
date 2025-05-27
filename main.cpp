@@ -11,8 +11,8 @@ using namespace httpserver;
 
 int main() {
     //const char* pqxx_connection = "dbname=couples_db user=postgres host=localhost port=5432";
-    const char* pqxx_connection = std::getenv("PQXX_TEST_CONNECTION"); 
-    // const char* pqxx_connection = std::getenv("PQXX_CONNECTION"); 
+    // const char* pqxx_connection = std::getenv("PQXX_TEST_CONNECTION"); 
+    const char* pqxx_connection = std::getenv("PQXX_CONNECTION"); 
 
     if (!pqxx_connection) {
         std::cerr << "Environment variable PQXX_CONNECTION not set" << std::endl;
