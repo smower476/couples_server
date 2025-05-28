@@ -51,7 +51,7 @@ void ConnectionPool::cleanup_idle_connections() {
         for (size_t i = 0; i < n; ++i) {
             auto timed_conn = std::move(pool.front());
             pool.pop();
-            if (duration_cast<minutes>(now - timed_conn->last_used).count() < 5) {
+            if (duration_cast<minutes>(now - timed_conn->last_used).count() < 0.5) {
                 keep.push_back(std::move(timed_conn));
             } // иначе соединение уничтожается
         }
