@@ -5,30 +5,40 @@ using namespace std::chrono;
 
 ConnectionPool::ConnectionPool(std::string conn_str, size_t pool_size)
     : conninfo(std::move(conn_str)), pool_size(pool_size) {
-    for (size_t i = 0; i < pool_size; ++i) {
-        pool.push(std::make_unique<TimedConnection>(std::make_unique<pqxx::connection>(conninfo)));
-    }
+    // Initialize with just one connection to ensure the pool isn't empty
+    pool.push(std::make_unique<TimedConnection>(std::make_unique<pqxx::connection>(conninfo)));
     cleanup_thread = std::thread(&ConnectionPool::cleanup_idle_connections, this);
 }
 
 std::unique_ptr<pqxx::connection> ConnectionPool::acquire() {
     std::unique_lock<std::mutex> lock(mtx);
-    cond.wait(lock, [&] { return !pool.empty(); });
-    auto timed_conn = std::move(pool.front());
-    pool.pop();
-    // Проверяем, не устарело ли соединение
-    auto now = steady_clock::now();
-    if (duration_cast<minutes>(now - timed_conn->last_used).count() >= 5) {
-        // Закрываем старое соединение и создаём новое
-        timed_conn = std::make_unique<TimedConnection>(std::make_unique<pqxx::connection>(conninfo));
+    
+    // Always create a fresh connection - this ensures we don't use expired connections
+    auto fresh_connection = std::make_unique<pqxx::connection>(conninfo);
+    
+    // If the pool is not at maximum capacity, we'll release a connection to it later
+    if (pool.size() < pool_size) {
+        // Add a new connection to the pool if it's below capacity
+        pool.push(std::make_unique<TimedConnection>(std::make_unique<pqxx::connection>(conninfo)));
+        cond.notify_one();
+    } else if (!pool.empty()) {
+        // If the pool is at capacity and not empty, remove the oldest connection
+        pool.pop();
+        // And add a fresh one (done in the release method when this connection is released)
     }
-    return std::move(timed_conn->conn);
+    
+    return fresh_connection;
 }
 
 void ConnectionPool::release(std::unique_ptr<pqxx::connection> conn) {
     std::lock_guard<std::mutex> lock(mtx);
-    pool.push(std::make_unique<TimedConnection>(std::move(conn)));
-    cond.notify_one();
+    
+    // Only add the connection to the pool if we're below capacity
+    if (pool.size() < pool_size) {
+        pool.push(std::make_unique<TimedConnection>(std::move(conn)));
+        cond.notify_one();
+    }
+    // Otherwise, let the connection be destroyed
 }
 
 void ConnectionPool::cleanup_idle_connections() {
